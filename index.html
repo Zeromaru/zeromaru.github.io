@@ -288,10 +288,13 @@
   .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px;}
   .card-name{
     font-family:'Chonburi',cursive; font-size:17px; color:var(--green-dark); line-height:1.3;
+    flex:1 1 auto; min-width:0;
   }
+  /* dish code sits on top, stat badges under it, both pinned to the right edge */
+  .card-meta{display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0;}
   .dish-code{
     font-family:inherit; font-size:12px; font-weight:700; color:var(--ink-soft);
-    margin-left:6px; white-space:nowrap; letter-spacing:.02em;
+    white-space:nowrap; letter-spacing:.02em;
   }
   .badges{display:flex; gap:6px; flex-shrink:0;}
   .badge{
@@ -13448,7 +13451,8 @@ function buildCard(group){
   card.innerHTML = `
     <div class="card-body">
       <div class="card-top">
-        <div class="card-name">${itemIcon(first.name,'ico-dish')}${first.name}<span class="dish-code">${dishCode(first.name)}</span></div>
+        <div class="card-name">${itemIcon(first.name,'ico-dish')}${first.name}</div>
+        <div class="card-meta"><span class="dish-code">${dishCode(first.name)}</span></div>
       </div>
       ${tabsHtml}
       <div class="variant-panel"></div>
@@ -13459,7 +13463,7 @@ function buildCard(group){
 
   const panel = card.querySelector('.variant-panel');
   const extra = card.querySelector('.extra');
-  const badgeHolder = card.querySelector('.card-top');
+  const badgeHolder = card.querySelector('.card-meta');
 
   function paintVariant(v){
     // badge
