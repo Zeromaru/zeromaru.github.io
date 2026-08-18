@@ -1,0 +1,938 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mineral Town Calendar</title>
+<style>
+  :root {
+    --bg: #F2F1E7;
+    --surface: #FBFAF3;
+    --surface-2: #EAE8D9;
+    --ink: #2C2A20;
+    --ink-soft: #6B6753;
+    --line: #D8D5C2;
+    --spring: #6FA85C;
+    --summer: #2F8FAD;
+    --autumn: #C4732B;
+    --winter: #7286A8;
+    --accent: var(--spring);
+    --accent-soft: color-mix(in srgb, var(--accent) 14%, var(--surface));
+    --sunday: #B3543E;
+    --plant: #4E8A3E;
+    --harvest: #A06B1F;
+    --birthday: #B05B7C;
+    --shadow: 0 1px 3px rgba(40, 36, 20, .10), 0 4px 14px rgba(40, 36, 20, .06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #201E17;
+      --surface: #2A2820;
+      --surface-2: #343227;
+      --ink: #E8E5D6;
+      --ink-soft: #A5A18B;
+      --line: #46443A;
+      --spring: #8FC47A;
+      --summer: #5BAFC9;
+      --autumn: #DB955A;
+      --winter: #93A7C9;
+      --sunday: #D98A73;
+      --plant: #7FBF6C;
+      --harvest: #D3A055;
+      --birthday: #D68BA8;
+      --shadow: 0 1px 3px rgba(0, 0, 0, .4);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #201E17;
+    --surface: #2A2820;
+    --surface-2: #343227;
+    --ink: #E8E5D6;
+    --ink-soft: #A5A18B;
+    --line: #46443A;
+    --spring: #8FC47A;
+    --summer: #5BAFC9;
+    --autumn: #DB955A;
+    --winter: #93A7C9;
+    --sunday: #D98A73;
+    --plant: #7FBF6C;
+    --harvest: #D3A055;
+    --birthday: #D68BA8;
+    --shadow: 0 1px 3px rgba(0, 0, 0, .4);
+  }
+
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    line-height: 1.5;
+    padding: 20px clamp(12px, 3vw, 32px) 48px;
+  }
+  h1, h2, .season-tab, .day-head {
+    font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+  }
+
+  header.top {
+    display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px;
+    max-width: 1180px; margin: 0 auto 16px;
+  }
+  h1 { font-size: clamp(1.4rem, 3vw, 1.9rem); letter-spacing: .01em; }
+  .subtitle { color: var(--ink-soft); font-size: .9rem; }
+  .year-picker { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+  .year-picker button {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+    border-radius: 6px; width: 30px; height: 30px; font-size: 1rem; cursor: pointer;
+  }
+  .year-picker button:hover { background: var(--accent-soft); }
+  .year-label { display: flex; align-items: center; gap: 5px; font-weight: 600; }
+  .year-label input {
+    width: 52px; height: 30px; text-align: center; font-variant-numeric: tabular-nums;
+    font-weight: 600; font-size: .95rem; font-family: inherit;
+    border: 1px solid var(--line); border-radius: 6px;
+    background: var(--surface); color: var(--ink);
+  }
+  .year-label input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .year-label input::-webkit-outer-spin-button,
+  .year-label input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .year-label input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+  .season-tabs {
+    display: flex; gap: 6px; max-width: 1180px; margin: 0 auto 14px; flex-wrap: wrap;
+  }
+  .season-tab {
+    flex: 1 1 120px; padding: 9px 12px; border-radius: 8px 8px 0 0; cursor: pointer;
+    border: 1px solid var(--line); border-bottom: 3px solid transparent;
+    background: var(--surface-2); color: var(--ink-soft);
+    font-size: 1.05rem; text-align: center; letter-spacing: .04em;
+  }
+  .season-tab .sub { font-size: .72rem; opacity: .75; display: block; letter-spacing: .02em; }
+  .season-tab.active {
+    background: var(--surface); color: var(--ink);
+    border-bottom-color: var(--accent); font-weight: 700;
+  }
+
+  .layout {
+    display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px;
+    max-width: 1180px; margin: 0 auto; align-items: start;
+  }
+  @media (max-width: 900px) { .layout { grid-template-columns: 1fr; } }
+
+  .calendar-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 14px; overflow-x: auto;
+  }
+  .filter-bar { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .f-toggle {
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
+    border-radius: 20px; padding: 3px 11px; font-size: .76rem; cursor: pointer;
+    font-family: inherit;
+  }
+  .f-toggle.on { background: var(--accent-soft); color: var(--ink); border-color: var(--accent); font-weight: 600; }
+  .f-toggle.all { border-style: solid; font-weight: 700; margin-right: 4px; }
+  .grid { display: grid; grid-template-columns: repeat(7, minmax(88px, 1fr)); gap: 5px; min-width: 660px; }
+  .day-head {
+    text-align: center; font-size: .85rem; color: var(--ink-soft); padding: 2px 0 6px;
+    letter-spacing: .05em;
+  }
+  .day-head.sun { color: var(--sunday); }
+  .cell {
+    background: var(--bg); border: 1px solid var(--line); border-radius: 7px;
+    min-height: 86px; padding: 5px 6px; cursor: pointer; position: relative;
+    display: flex; flex-direction: column; gap: 3px;
+    transition: border-color .12s, background .12s, opacity .12s;
+  }
+  .cell:hover { border-color: var(--accent); }
+  .cell.selected { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+  .cell.empty { visibility: hidden; }
+  .cell.late { opacity: .4; }
+  .cell.late:hover { opacity: .85; }
+  .cell.today { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
+  .cell.today .num::after {
+    content: "TODAY"; margin-left: 5px; font-size: .58rem; font-weight: 700;
+    color: var(--accent); letter-spacing: .08em; vertical-align: 1px;
+  }
+  .cell .num { font-weight: 700; font-size: .9rem; font-variant-numeric: tabular-nums; }
+  .cell.sun .num { color: var(--sunday); }
+  .chip {
+    font-size: .68rem; line-height: 1.25; border-radius: 4px; padding: 1px 5px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .chip.bd { background: color-mix(in srgb, var(--birthday) 16%, var(--surface)); color: var(--birthday); }
+  .chip.fest { background: color-mix(in srgb, var(--accent) 20%, var(--surface)); color: var(--accent); font-weight: 700; }
+  .chip.plant { background: color-mix(in srgb, var(--plant) 16%, var(--surface)); color: var(--plant); }
+  .chip.harvest { background: color-mix(in srgb, var(--harvest) 18%, var(--surface)); color: var(--harvest); }
+  .chip.you { background: color-mix(in srgb, var(--harvest) 22%, var(--surface)); color: var(--harvest); font-weight: 700; }
+  .chip.gift {
+    background: transparent; color: var(--birthday); opacity: .85;
+    border: 1px dashed color-mix(in srgb, var(--birthday) 45%, var(--line));
+  }
+  .chip.note { background: var(--surface-2); color: var(--ink-soft); }
+
+  .side { display: flex; flex-direction: column; gap: 14px; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+    box-shadow: var(--shadow); padding: 14px;
+  }
+  .panel h2 { font-size: 1.02rem; margin-bottom: 8px; }
+  .panel h2 .accent { color: var(--accent); }
+  .muted { color: var(--ink-soft); font-size: .82rem; }
+
+  .up-list { list-style: none; display: flex; flex-direction: column; gap: 5px; font-size: .83rem; }
+  .up-list li { display: flex; gap: 8px; align-items: baseline; }
+  .up-list .d { min-width: 76px; color: var(--ink-soft); font-size: .76rem; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .up-list .d.today-mark { color: var(--accent); font-weight: 700; }
+
+  .detail-date { font-weight: 700; font-size: 1.05rem; }
+  .detail-list { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-top: 8px; }
+  .detail-list li {
+    border-left: 3px solid var(--line); padding: 2px 0 2px 9px; font-size: .86rem;
+  }
+  .detail-list li.bd { border-left-color: var(--birthday); }
+  .detail-list li.fest { border-left-color: var(--accent); }
+  .detail-list li.plant { border-left-color: var(--plant); }
+  .detail-list li.harvest { border-left-color: var(--harvest); }
+  .detail-list li.you { border-left-color: var(--harvest); }
+  .detail-list li.gift { border-left-color: color-mix(in srgb, var(--birthday) 45%, var(--line)); }
+  .detail-list .t { font-weight: 700; }
+  .detail-list .sub { color: var(--ink-soft); font-size: .78rem; }
+  .rm {
+    border: none; background: none; color: var(--sunday); cursor: pointer;
+    font-size: .78rem; padding: 0; text-decoration: underline;
+  }
+  .note-box {
+    width: 100%; margin-top: 10px; padding: 7px 9px; border-radius: 7px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+    font-family: inherit; font-size: .84rem; resize: vertical; min-height: 44px;
+  }
+  .note-box:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  select, .plant-btn {
+    width: 100%; padding: 8px 10px; border-radius: 7px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); font-size: .88rem; font-family: inherit;
+  }
+  .plant-btn {
+    background: var(--plant); color: #fff; border: none; cursor: pointer;
+    font-weight: 700; margin-top: 8px;
+  }
+  :root[data-theme="dark"] .plant-btn { color: #1c2416; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .plant-btn { color: #1c2416; } }
+  .plant-btn:disabled { opacity: .45; cursor: not-allowed; }
+
+  .crop-info { margin-top: 8px; font-size: .82rem; display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; }
+  .crop-info dt { color: var(--ink-soft); }
+  .crop-info dd { font-variant-numeric: tabular-nums; }
+  .replant-row { margin-top: 8px; font-size: .82rem; display: flex; gap: 6px; align-items: baseline; }
+  .replant-row input { accent-color: var(--plant); }
+
+  .summary { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 10px; }
+  .summary h3 { font-size: .86rem; margin-bottom: 6px; }
+  .sum-list { list-style: none; display: flex; flex-direction: column; gap: 3px; font-size: .8rem; }
+  .sum-list li { display: flex; justify-content: space-between; gap: 8px; }
+  .sum-list .g { font-variant-numeric: tabular-nums; color: var(--ink-soft); flex-shrink: 0; }
+  .sum-total { display: flex; justify-content: space-between; gap: 8px; font-size: .84rem; font-weight: 700; margin-top: 6px; }
+  .sum-total .profit { color: var(--plant); font-variant-numeric: tabular-nums; }
+  .sum-total .profit.neg { color: var(--sunday); }
+
+  .fest-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+  .fest-list li { display: flex; gap: 8px; font-size: .84rem; align-items: baseline; }
+  .fest-list .d {
+    min-width: 30px; text-align: right; font-weight: 700; color: var(--accent);
+    font-variant-numeric: tabular-nums;
+  }
+  .fest-list .v { color: var(--ink-soft); font-size: .76rem; }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .78rem; color: var(--ink-soft); margin-top: 10px; }
+  .legend .chip { font-size: .72rem; }
+
+  .bday-row { display: grid; grid-template-columns: 1fr 84px; gap: 8px; }
+  .btn-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .data-btn {
+    padding: 8px 10px; border-radius: 7px; border: 1px solid var(--line);
+    background: var(--bg); color: var(--ink); font-size: .88rem; font-family: inherit;
+    cursor: pointer; font-weight: 600;
+  }
+  .data-btn:hover { background: var(--accent-soft); border-color: var(--accent); }
+  .data-btn.danger { color: var(--sunday); border-color: color-mix(in srgb, var(--sunday) 45%, var(--line)); }
+  .data-btn.danger:hover { background: color-mix(in srgb, var(--sunday) 12%, var(--surface)); border-color: var(--sunday); }
+  .data-btn.small { padding: 4px 10px; font-size: .78rem; margin-top: 6px; width: auto; }
+  .confirm-box {
+    margin-top: 8px; padding: 10px; border-radius: 7px; font-size: .84rem;
+    border: 1px solid color-mix(in srgb, var(--sunday) 45%, var(--line));
+    background: color-mix(in srgb, var(--sunday) 8%, var(--surface));
+  }
+  .confirm-box p { margin-bottom: 8px; }
+
+  footer.note { max-width: 1180px; margin: 18px auto 0; color: var(--ink-soft); font-size: .78rem; }
+  footer.note p { margin-top: 4px; }
+</style>
+
+<header class="top">
+  <h1>Mineral Town Calendar</h1>
+  <span class="subtitle">Harvest Moon: More Friends of Mineral Town (GBA) — birthdays · festivals · crop planner</span>
+  <div class="year-picker">
+    <button id="yPrev" aria-label="Previous year">−</button>
+    <label class="year-label">Year <input id="yInput" type="number" min="1" max="999" value="1" aria-label="Year number"></label>
+    <button id="yNext" aria-label="Next year">+</button>
+  </div>
+</header>
+
+<nav class="season-tabs" id="tabs"></nav>
+
+<div class="layout">
+  <div class="calendar-card">
+    <div class="filter-bar" id="filterBar"></div>
+    <div class="grid" id="grid"></div>
+    <div class="legend">
+      <span class="chip bd">🎂 Birthday</span>
+      <span class="chip fest">🎪 Festival</span>
+      <span class="chip gift">🎁 Gift prep</span>
+      <span class="chip plant">🌱 Planting</span>
+      <span class="chip harvest">🧺 Harvest</span>
+      <span class="chip note">📝 Note</span>
+      <span>Click a day for details / planting</span>
+    </div>
+  </div>
+
+  <aside class="side">
+    <section class="panel">
+      <h2>📅 Next 7 Days</h2>
+      <div id="upBody"></div>
+    </section>
+
+    <section class="panel" id="detailPanel">
+      <h2>Day Details</h2>
+      <p class="muted" id="detailEmpty">Click a day on the calendar to see its birthdays, festivals, and crop plans.</p>
+      <div id="detailBody" hidden>
+        <div class="detail-date" id="detailDate"></div>
+        <button class="data-btn small" id="todayBtn"></button>
+        <ul class="detail-list" id="detailList"></ul>
+        <textarea class="note-box" id="noteInput" placeholder="Your note for this day…" maxlength="500"></textarea>
+        <button class="plant-btn" id="plantBtn"></button>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>⭐ Your Birthday</h2>
+      <div class="bday-row">
+        <select id="pSeason" aria-label="Your birthday season"></select>
+        <select id="pDay" aria-label="Your birthday day"></select>
+      </div>
+      <p class="muted" id="pNote" style="margin-top:8px"></p>
+    </section>
+
+    <section class="panel">
+      <h2>🌱 Crop Planner</h2>
+      <select id="cropSelect"></select>
+      <dl class="crop-info" id="cropInfo"></dl>
+      <label class="replant-row" id="replantRow" hidden>
+        <input type="checkbox" id="replantChk">
+        <span>Replant after each harvest until the season ends</span>
+      </label>
+      <p class="muted" id="cropNote" style="margin-top:8px"></p>
+      <div class="summary" id="planSummary"></div>
+    </section>
+
+    <section class="panel">
+      <h2>🎪 <span class="accent" id="festSeason"></span> Festivals</h2>
+      <ul class="fest-list" id="festList"></ul>
+    </section>
+
+    <section class="panel">
+      <h2>💾 Your Data</h2>
+      <p class="muted">Your birthday, crop plans, notes, and today marker are saved in this browser automatically. Export them to a file to back up or move to another device.</p>
+      <div class="btn-row">
+        <button class="data-btn" id="exportBtn">Export file</button>
+        <button class="data-btn" id="importBtn">Import file</button>
+      </div>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+      <button class="data-btn danger" id="resetBtn" style="width:100%;margin-top:8px">Reset all data</button>
+      <div class="confirm-box" id="resetConfirm" hidden>
+        <p>Delete your birthday, today marker, filter settings, <strong id="resetCount"></strong>? This can't be undone — export a backup first if unsure.</p>
+        <div class="btn-row">
+          <button class="data-btn danger" id="resetYes">Yes, delete everything</button>
+          <button class="data-btn" id="resetNo">Cancel</button>
+        </div>
+      </div>
+      <p class="muted" id="dataStatus" style="margin-top:8px"></p>
+    </section>
+  </aside>
+</div>
+
+<footer class="note">
+  <p>💡 Zack skips shipping pickup on festival days — shipped goods pay out the next day · All shops and houses are closed during festivals</p>
+  <p>Data from Usagi's birthday guide (birthdate.txt) and the main guide (guide.txt) · Conflicting guide entries corrected to match the actual game: Popuri = Summer 3, Doctor = Fall 19, Staid = Spring 15</p>
+</footer>
+
+<script>
+"use strict";
+
+const SEASONS = [
+  { key: "spring", name: "Spring", sub: "Month 1", color: "var(--spring)" },
+  { key: "summer", name: "Summer", sub: "Month 2", color: "var(--summer)" },
+  { key: "autumn", name: "Autumn", sub: "Month 3", color: "var(--autumn)" },
+  { key: "winter", name: "Winter", sub: "Month 4", color: "var(--winter)" },
+];
+const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DOW_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+
+// [season, day, name, group, best gifts, alternate day]
+// Bachelors have an alternate day: if the player's birthday matches theirs,
+// the game moves their birthday to the alternate day.
+const BIRTHDAYS = [
+  [0, 4,  "Bold", "sprite", "Purple Grass, Flour, Honey, Apple"],
+  [0, 8,  "Kappa", "bachelor", "Cucumber (that's it)", 9],
+  [0, 8,  "Harvest Goddess", "special", "Pineapple, Strawberry, Eggs, any crop"],
+  [0, 11, "Saibara", "villager", "Turnip, Bamboo Shoots, Large Fish, Adamantite"],
+  [0, 15, "Staid", "sprite", "Blue Grass, Flour, Honey, Apple"],
+  [0, 16, "Elli", "bachelorette", "Moon Dumpling, Hot Milk, Red Magic Grass"],
+  [0, 17, "Barley", "villager", "Miso Soup, Rice Balls, Spa Boiled Egg"],
+  [0, 19, "Lillia", "villager", "Pink Cat flower, any flower, Eggs, Milk"],
+  [0, 26, "Aqua", "sprite", "Aquamarine Grass, Flour, Honey, Apple"],
+  [0, 30, "Sasha", "villager", "Pink Cat flower, Cookies, Chocolate, Perfume"],
+  [1, 3,  "Popuri", "bachelorette", "Any egg dish, flowers, sweets"],
+  [1, 4,  "Harris", "villager", "Energy Drink, Small Fish, Spa Boiled Egg"],
+  [1, 6,  "Cliff", "bachelor", "Curry Rice (loves home cooking)", 10],
+  [1, 11, "Basil", "villager", "Any grass, mushrooms, flowers, Wine"],
+  [1, 16, "Timid", "sprite", "Green Grass, Flour, Honey, Apple"],
+  [1, 17, "Ann", "bachelorette", "Cheese Fondue, Pancakes, Cake, Truffle Rice"],
+  [1, 21, "Gourmet", "special", "Elli Leaves, anything you cook (not burnt)", 20],
+  [1, 22, "Kai", "bachelor", "Pineapple", 17],
+  [1, 25, "Thomas", "villager", "Wild Grape Juice, Wine, Jam Bun, Soba Noodles"],
+  [1, 29, "Zack", "villager", "Noodles, Fried Rice, Cheese, Cucumber"],
+  [2, 2,  "Gotz", "villager", "Honey, Apple, Cheese, Egg, Lumber"],
+  [2, 5,  "Stu", "villager", "Chocolate, Honey, Wild Grape, sweets"],
+  [2, 10, "Hoggy", "sprite", "Yellow Grass, Popcorn, French Fries"],
+  [2, 11, "Manna", "villager", "Strawberry Jam, Wine, Cheese, accessories"],
+  [2, 14, "Chef", "sprite", "Red Grass, Flour, Honey, Apple"],
+  [2, 15, "Karen", "bachelorette", "French Fries, Pizza, Popcorn"],
+  [2, 19, "Doctor", "bachelor", "Milk, any grass, Poisonous Mushroom(!), Elli Leaves", 25],
+  [2, 20, "Carter", "villager", "Egg, Honey, Fish, Milk, Curry"],
+  [2, 23, "Anna", "villager", "Sweet Potato, Apple, Honey, Perfume"],
+  [2, 27, "Rick", "bachelor", "Spa Boiled Egg, egg dishes, Mayonnaise", 23],
+  [3, 6,  "Gray", "bachelor", "Baked Corn, any ore, jewels", 23],
+  [3, 11, "Doug", "villager", "Vegetables, Honey, Fish, Wine, home cooking"],
+  [3, 13, "Ellen", "villager", "Rice Cake, Pumpkin, Carrot, Milk, Yarn"],
+  [3, 15, "Duke", "villager", "Wine, Eggplant, Cheese, Bread, Sashimi"],
+  [3, 19, "Won", "bachelor", "Golden Lumber, Gold Ore, Golden Egg, Pirate Treasure", 21],
+  [3, 20, "Mary", "bachelorette", "Vegetable Juice, Vegetable Latte, Relaxation Tea"],
+  [3, 22, "Nappy", "sprite", "Orange Grass, Fruit Juice, Flour, Honey"],
+  [3, 26, "May", "villager", "Honey, Apples, Chocolate, Pineapple"],
+  [3, 29, "Jeff", "villager", "Honey, Fruit Juice, Corn Flakes, Blue Grass"],
+];
+const GROUP_LABEL = {
+  bachelor: "Bachelor", bachelorette: "Rival girl", villager: "Villager",
+  sprite: "Harvest Sprite", special: "Special",
+};
+// "special" (Goddess, Gourmet) shares the sprite filter toggle
+const groupKey = b => b[3] === "special" ? "sprite" : b[3];
+
+// [season, day, name, time, venue, note]
+const FESTIVALS = [
+  [0, 1,  "New Year's", "6PM–12AM", "Rose Square", "Free rice cakes"],
+  [0, 14, "Spring Thanksgiving", "All day", "Your farm", "Boys who like you bring you chocolate"],
+  [0, 18, "Spring Horse Race", "10AM–6PM", "Rose Square", "Horse races + betting for prizes"],
+  [0, 22, "Cooking Festival", "10AM–6PM", "Rose Square", "Cooking contest (judged by the Gourmet)"],
+  [1, 1,  "Beach Day", "10AM–6PM", "Mineral Beach", "Dog frisbee contest"],
+  [1, 7,  "Chicken Festival", "10AM–6PM", "Rose Square", "Chicken fighting — winner starts laying golden eggs"],
+  [1, 20, "Cow Festival", "10AM–6PM", "Rose Square", "Cow judging — winner gives higher-grade milk"],
+  [1, 24, "Fireworks Festival", "6PM–9PM", "Mineral Beach", "Watch fireworks with the boy you like"],
+  [2, 3,  "Music Festival", "6PM–12AM", "Church", "Sing and play music"],
+  [2, 9,  "Harvest Festival", "10AM–6PM", "Rose Square", "Communal hot pot — never add chocolate, poisonous mushroom, or red grass"],
+  [2, 13, "Moon Festival", "6PM–12AM", "Peak of Mother's Hill", "The boy who loves you most waits to watch the moon with you"],
+  [2, 18, "Fall Horse Race", "10AM–6PM", "Rose Square", "Horse races + betting for prizes"],
+  [2, 21, "Sheep Festival", "10AM–6PM", "Rose Square", "Sheep judging — winner gives higher-grade wool"],
+  [2, 30, "Pumpkin Festival", "All day", "Your farm", "Kids come trick-or-treating — have sweets ready"],
+  [3, 14, "Winter Thanksgiving", "All day", "Around town", "You give chocolate to the boy you like"],
+  [3, 24, "Starry Night", "6PM–9PM", "Depends on invite", "Starry-night dinner with a boy / your husband"],
+  [3, 25, "Stocking Festival", "Night of the 25th", "Your farm", "Own a sock and sleep between 9PM–12AM to get presents"],
+  [3, 30, "New Year's Eve", "6PM–12AM", "Rose Square", "Free noodles · at midnight watch the first sunrise on the peak"],
+];
+
+// ripe = days until first harvest (plant day d, harvest d+ripe), regrow = harvest again every N days (0 = once)
+const CROPS = [
+  { id: "turnip",      name: "Turnip",       season: 0, ripe: 4,  regrow: 0, cost: 120,  sell: 60,  src: "Supermarket" },
+  { id: "potato",      name: "Potato",       season: 0, ripe: 7,  regrow: 0, cost: 150,  sell: 80,  src: "Supermarket" },
+  { id: "cucumber",    name: "Cucumber",     season: 0, ripe: 7,  regrow: 5, cost: 200,  sell: 60,  src: "Supermarket" },
+  { id: "strawberry",  name: "Strawberry",   season: 0, ripe: 8,  regrow: 2, cost: 150,  sell: 30,  src: "Supermarket (unlock first)" },
+  { id: "cabbage",     name: "Cabbage",      season: 0, ripe: 14, regrow: 0, cost: 500,  sell: 250, src: "Won's shop" },
+  { id: "tomato",      name: "Tomato",       season: 1, ripe: 9,  regrow: 3, cost: 200,  sell: 60,  src: "Supermarket" },
+  { id: "corn",        name: "Corn",         season: 1, ripe: 14, regrow: 3, cost: 300,  sell: 100, src: "Supermarket" },
+  { id: "onion",       name: "Onion",        season: 1, ripe: 7,  regrow: 0, cost: 150,  sell: 80,  src: "Supermarket" },
+  { id: "pumpkin",     name: "Pumpkin",      season: 1, ripe: 14, regrow: 0, cost: 500,  sell: 250, src: "Supermarket (unlock first)" },
+  { id: "pineapple",   name: "Pineapple",    season: 1, ripe: 20, regrow: 5, cost: 1000, sell: 500, src: "Won's shop" },
+  { id: "eggplant",    name: "Eggplant",     season: 2, ripe: 9,  regrow: 3, cost: 120,  sell: 80,  src: "Supermarket" },
+  { id: "sweetpotato", name: "Sweet Potato", season: 2, ripe: 5,  regrow: 2, cost: 300,  sell: 120, src: "Supermarket" },
+  { id: "greenpepper", name: "Green Pepper", season: 2, ripe: 7,  regrow: 2, cost: 150,  sell: 40,  src: "Won's shop" },
+  { id: "carrot",      name: "Carrot",       season: 2, ripe: 7,  regrow: 0, cost: 300,  sell: 60,  src: "Supermarket" },
+  { id: "spinach",     name: "Spinach",      season: 2, ripe: 5,  regrow: 0, cost: 200,  sell: 80,  src: "Supermarket (unlock first)" },
+];
+const SQUARES_PER_BAG = 9; // one seed bag sows a 3x3 patch
+
+const DEFAULT_FILTERS = { bachelor: true, bachelorette: true, villager: true, sprite: true, festival: true, gifts: false };
+const FILTER_DEFS = [
+  ["bachelor", "Bachelors"], ["bachelorette", "Rival girls"], ["villager", "Villagers"],
+  ["sprite", "Sprites & special"], ["festival", "Festivals"], ["gifts", "🎁 Gift prep"],
+];
+
+function loadLS(key, fallback) {
+  try {
+    const v = JSON.parse(localStorage.getItem(key));
+    return v === null || v === undefined ? fallback : v;
+  } catch (e) { return fallback; }
+}
+function saveLS(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {} }
+
+const state = {
+  year: 1, season: 0, selectedDay: null,
+  plans: loadLS("mtcal-plans", []),
+  player: loadLS("mtcal-player", null),
+  notes: loadLS("mtcal-notes", {}),
+  today: loadLS("mtcal-today", null),
+  filters: Object.assign({}, DEFAULT_FILTERS, loadLS("mtcal-filters", {})),
+};
+const savePlans = () => saveLS("mtcal-plans", state.plans);
+const savePlayer = () => saveLS("mtcal-player", state.player);
+const saveNotes = () => saveLS("mtcal-notes", state.notes);
+const saveToday = () => saveLS("mtcal-today", state.today);
+const saveFilters = () => saveLS("mtcal-filters", state.filters);
+
+// Year 1 Spring 1 = Sunday; a year is 120 days, so weekdays shift by 1 each year
+const dow = (year, season, day) => ((year - 1) * 120 + season * 30 + day - 1) % 7;
+// absolute day number for cross-season date math
+const absOf = (year, season, day) => (year - 1) * 120 + season * 30 + day;
+const dateOf = abs => {
+  const r = (abs - 1) % 120;
+  return { year: Math.floor((abs - 1) / 120) + 1, season: Math.floor(r / 30), day: r % 30 + 1 };
+};
+
+const cropById = id => CROPS.find(c => c.id === id);
+const noteKey = (year, season, day) => `${year}-${season}-${day}`;
+
+// All harvest days for one plan (only up to day 30 — crops die at the season change)
+function harvestDays(plan) {
+  const c = cropById(plan.crop);
+  const days = [];
+  let d = plan.day + c.ripe;
+  while (d <= 30) { days.push(d); if (!c.regrow) break; d += c.regrow; }
+  return days;
+}
+
+// A bachelor sharing the player's birthday celebrates on his alternate day instead
+function effectiveDay(b) {
+  const p = state.player;
+  return (p && b[5] && b[0] === p.season && b[1] === p.day) ? b[5] : b[1];
+}
+function birthdaysOn(season, day) { return BIRTHDAYS.filter(b => b[0] === season && effectiveDay(b) === day); }
+function festivalsOn(season, day) { return FESTIVALS.filter(f => f[0] === season && f[1] === day); }
+function plansOn(year, season) { return state.plans.filter(p => p.year === year && p.season === season); }
+function isPlayerBirthday(season, day) { return !!state.player && state.player.season === season && state.player.day === day; }
+// Buy a birthday gift 2 days ahead (guide's advice); reminders that fall before day 1 are skipped
+function giftRemindersOn(season, day) {
+  return BIRTHDAYS.filter(b => b[0] === season && effectiveDay(b) - 2 === day && state.filters[groupKey(b)]);
+}
+function isToday(year, season, day) {
+  return !!state.today && state.today.year === year && state.today.season === season && state.today.day === day;
+}
+
+/* ---------- render ---------- */
+
+const $ = id => document.getElementById(id);
+
+function setAccent() {
+  document.documentElement.style.setProperty("--accent", SEASONS[state.season].color);
+}
+
+function renderTabs() {
+  $("tabs").innerHTML = SEASONS.map((s, i) =>
+    `<button class="season-tab${i === state.season ? " active" : ""}" data-s="${i}">
+       ${s.name}<span class="sub">${s.sub}</span></button>`).join("");
+  $("tabs").querySelectorAll("button").forEach(b =>
+    b.addEventListener("click", () => { state.season = +b.dataset.s; state.selectedDay = null; renderAll(); }));
+}
+
+function renderFilterBar() {
+  const allOn = FILTER_DEFS.every(([key]) => state.filters[key]);
+  $("filterBar").innerHTML =
+    `<button class="f-toggle all${allOn ? " on" : ""}" data-f="__all">${allOn ? "All off" : "All on"}</button>` +
+    FILTER_DEFS.map(([key, label]) =>
+      `<button class="f-toggle${state.filters[key] ? " on" : ""}" data-f="${key}">${label}</button>`).join("");
+  $("filterBar").querySelectorAll("button").forEach(b =>
+    b.addEventListener("click", () => {
+      if (b.dataset.f === "__all") {
+        const turnOn = !FILTER_DEFS.every(([key]) => state.filters[key]);
+        FILTER_DEFS.forEach(([key]) => { state.filters[key] = turnOn; });
+      } else {
+        state.filters[b.dataset.f] = !state.filters[b.dataset.f];
+      }
+      saveFilters(); renderFilterBar(); renderGrid();
+    }));
+}
+
+function renderGrid() {
+  const g = $("grid");
+  const lead = dow(state.year, state.season, 1);
+  let html = DOW.map((d, i) => `<div class="day-head${i === 0 ? " sun" : ""}">${d}</div>`).join("");
+  for (let i = 0; i < lead; i++) html += `<div class="cell empty"></div>`;
+
+  const seasonPlans = plansOn(state.year, state.season);
+  const selCrop = cropById($("cropSelect") && $("cropSelect").value);
+  const shadeLate = selCrop && selCrop.season === state.season;
+
+  for (let day = 1; day <= 30; day++) {
+    const w = dow(state.year, state.season, day);
+    const chips = [];
+    if (state.filters.festival)
+      festivalsOn(state.season, day).forEach(f => chips.push(`<span class="chip fest">🎪 ${f[2]}</span>`));
+    if (isPlayerBirthday(state.season, day)) chips.push(`<span class="chip you">⭐ Your birthday</span>`);
+    birthdaysOn(state.season, day).forEach(b => {
+      if (state.filters[groupKey(b)]) chips.push(`<span class="chip bd">🎂 ${b[2]}</span>`);
+    });
+    if (state.filters.gifts)
+      giftRemindersOn(state.season, day).forEach(b => chips.push(`<span class="chip gift">🎁 ${b[2]}</span>`));
+    seasonPlans.forEach(p => {
+      const c = cropById(p.crop);
+      if (p.day === day) chips.push(`<span class="chip plant">🌱 ${c.name}</span>`);
+      if (harvestDays(p).includes(day)) chips.push(`<span class="chip harvest">🧺 ${c.name}</span>`);
+    });
+    const note = state.notes[noteKey(state.year, state.season, day)];
+    if (note) chips.push(`<span class="chip note">📝 ${note.replace(/</g, "&lt;")}</span>`);
+
+    const cls = ["cell"];
+    if (w === 0) cls.push("sun");
+    if (state.selectedDay === day) cls.push("selected");
+    if (isToday(state.year, state.season, day)) cls.push("today");
+    else if (shadeLate && day + selCrop.ripe > 30) cls.push("late");
+    html += `<div class="${cls.join(" ")}" data-day="${day}"><span class="num">${day}</span>${chips.join("")}</div>`;
+  }
+  g.innerHTML = html;
+  g.querySelectorAll(".cell[data-day]").forEach(el =>
+    el.addEventListener("click", () => { state.selectedDay = +el.dataset.day; renderGrid(); renderDetail(); }));
+}
+
+function renderUpcoming() {
+  const body = $("upBody");
+  if (!state.today) {
+    body.innerHTML = `<p class="muted">Set your current in-game day to see what's coming up: click a day, then "Set as today".</p>`;
+    return;
+  }
+  const items = [];
+  const startAbs = absOf(state.today.year, state.today.season, state.today.day);
+  for (let off = 0; off < 7; off++) {
+    const { year, season, day } = dateOf(startAbs + off);
+    const label = off === 0 ? "Today" : `${SEASONS[season].name} ${day}`;
+    const mark = off === 0 ? " today-mark" : "";
+    const push = text => items.push(`<li><span class="d${mark}">${label}</span><span>${text}</span></li>`);
+
+    festivalsOn(season, day).forEach(f => push(`🎪 <strong>${f[2]}</strong> · ${f[3]}`));
+    if (isPlayerBirthday(season, day)) push(`⭐ <strong>Your birthday</strong>`);
+    birthdaysOn(season, day).forEach(b => push(`🎂 <strong>${b[2]}</strong>'s birthday`));
+    giftRemindersOn(season, day).forEach(b => push(`🎁 Buy a gift for <strong>${b[2]}</strong> (birthday in 2 days)`));
+    plansOn(year, season).forEach(p => {
+      const c = cropById(p.crop);
+      if (p.day === day) push(`🌱 Plant <strong>${c.name}</strong>`);
+      if (harvestDays(p).includes(day)) push(`🧺 Harvest <strong>${c.name}</strong>`);
+    });
+    const note = state.notes[noteKey(year, season, day)];
+    if (note) push(`📝 ${note.replace(/</g, "&lt;")}`);
+  }
+  body.innerHTML = items.length
+    ? `<ul class="up-list">${items.join("")}</ul>`
+    : `<p class="muted">Quiet week — nothing coming up in the next 7 days.</p>`;
+}
+
+function renderFestList() {
+  $("festSeason").textContent = SEASONS[state.season].name;
+  const list = FESTIVALS.filter(f => f[0] === state.season);
+  $("festList").innerHTML = list.map(f =>
+    `<li><span class="d">${f[1]}</span>
+         <span><strong>${f[2]}</strong> · ${f[3]} · ${f[4]}<br><span class="v">${f[5]}</span></span></li>`).join("");
+}
+
+function renderCropPanel() {
+  const sel = $("cropSelect");
+  const crops = CROPS.filter(c => c.season === state.season);
+  if (!crops.length) {
+    sel.innerHTML = `<option value="">— Nothing grows in Winter —</option>`;
+    sel.disabled = true;
+    $("cropInfo").innerHTML = "";
+    $("replantRow").hidden = true;
+    $("cropNote").textContent = "Good time for mining, fishing, and making friends in town.";
+  } else {
+    sel.disabled = false;
+    sel.innerHTML = crops.map(c => `<option value="${c.id}">${c.name} — ${c.cost}G/bag</option>`).join("");
+    sel.onchange = () => { renderCropInfo(); renderGrid(); renderDetail(); };
+    renderCropInfo();
+    $("cropNote").textContent = "Pick a crop, then click a day on the calendar to plant it. Days too late for it are dimmed.";
+  }
+  renderPlanSummary();
+}
+
+function renderCropInfo() {
+  const c = cropById($("cropSelect").value);
+  if (!c) return;
+  const lastPlant = 30 - c.ripe;
+  $("cropInfo").innerHTML = `
+    <dt>Ripens in</dt><dd>${c.ripe} days</dd>
+    <dt>Regrows</dt><dd>${c.regrow ? `every ${c.regrow} days` : "single harvest"}</dd>
+    <dt>Sells for</dt><dd>${c.sell}G each</dd>
+    <dt>Seeds at</dt><dd>${c.src}</dd>
+    <dt>Plant by</dt><dd>day ${lastPlant} (later won't ripen in time)</dd>`;
+  $("replantRow").hidden = !!c.regrow;
+}
+
+function renderPlanSummary() {
+  const box = $("planSummary");
+  const plans = plansOn(state.year, state.season)
+    .slice().sort((a, b) => a.day - b.day || a.crop.localeCompare(b.crop));
+  if (!plans.length) {
+    box.innerHTML = `<h3>📊 ${SEASONS[state.season].name} plan, Year ${state.year}</h3>
+      <p class="muted">No plantings yet.</p>`;
+    return;
+  }
+  let cost = 0, revenue = 0;
+  const rows = plans.map(p => {
+    const c = cropById(p.crop);
+    const hs = harvestDays(p).length;
+    const rev = hs * SQUARES_PER_BAG * c.sell;
+    cost += c.cost; revenue += rev;
+    return `<li><span>${c.name} · day ${p.day} · ${hs}× harvest</span>
+            <span class="g">−${c.cost}G / +${rev}G</span></li>`;
+  });
+  const profit = revenue - cost;
+  box.innerHTML = `<h3>📊 ${SEASONS[state.season].name} plan, Year ${state.year}</h3>
+    <ul class="sum-list">${rows.join("")}</ul>
+    <div class="sum-total"><span>Profit (per bag, ${SQUARES_PER_BAG} squares)</span>
+      <span class="profit${profit < 0 ? " neg" : ""}">${profit >= 0 ? "+" : ""}${profit}G</span></div>`;
+}
+
+function renderDetail() {
+  const day = state.selectedDay;
+  if (!day) { $("detailEmpty").hidden = false; $("detailBody").hidden = true; return; }
+  $("detailEmpty").hidden = true;
+  $("detailBody").hidden = false;
+
+  const s = SEASONS[state.season];
+  const w = dow(state.year, state.season, day);
+  $("detailDate").textContent = `${s.name} ${day} (${DOW_FULL[w]}), Year ${state.year}`;
+
+  const tBtn = $("todayBtn");
+  if (isToday(state.year, state.season, day)) {
+    tBtn.textContent = "📍 This is today";
+    tBtn.disabled = true;
+  } else {
+    tBtn.textContent = "📍 Set as today";
+    tBtn.disabled = false;
+    tBtn.onclick = () => {
+      state.today = { year: state.year, season: state.season, day };
+      saveToday(); renderAll();
+    };
+  }
+
+  const items = [];
+  festivalsOn(state.season, day).forEach(f =>
+    items.push(`<li class="fest"><span class="t">🎪 ${f[2]}</span><br>
+                <span class="sub">${f[3]} · ${f[4]} — ${f[5]}</span></li>`));
+  if (isPlayerBirthday(state.season, day))
+    items.push(`<li class="you"><span class="t">⭐ Your birthday</span></li>`);
+  birthdaysOn(state.season, day).forEach(b => {
+    const moved = effectiveDay(b) !== b[1]
+      ? `<br><span class="sub">Moved from ${SEASONS[b[0]].name} ${b[1]} — he shares your birthday, so he uses his alternate day.</span>`
+      : "";
+    items.push(`<li class="bd"><span class="t">🎂 ${b[2]}</span> <span class="sub">(${GROUP_LABEL[b[3]]})</span><br>
+                <span class="sub">Best gifts: ${b[4]}</span>${moved}</li>`);
+  });
+  giftRemindersOn(state.season, day).forEach(b =>
+    items.push(`<li class="gift"><span class="t">🎁 Buy a gift for ${b[2]}</span><br>
+                <span class="sub">Birthday in 2 days (${SEASONS[b[0]].name} ${effectiveDay(b)}) — likes: ${b[4]}</span></li>`));
+  plansOn(state.year, state.season).forEach(p => {
+    const c = cropById(p.crop);
+    if (p.day === day) {
+      const hs = harvestDays(p);
+      items.push(`<li class="plant"><span class="t">🌱 Plant ${c.name}</span>
+                  <button class="rm" data-rm="${p.id}">remove</button><br>
+                  <span class="sub">${hs.length ? "Harvest on day " + hs.join(", ") : "⚠️ Won't ripen before the season ends"}</span></li>`);
+    } else if (harvestDays(p).includes(day)) {
+      items.push(`<li class="harvest"><span class="t">🧺 Harvest ${c.name}</span>
+                  <span class="sub">(planted day ${p.day} · sells ${c.sell}G each)</span></li>`);
+    }
+  });
+  if (!items.length) items.push(`<li><span class="sub">Free day — good for farm work, mining, or fishing.</span></li>`);
+  $("detailList").innerHTML = items.join("");
+  $("detailList").querySelectorAll("[data-rm]").forEach(b =>
+    b.addEventListener("click", () => {
+      state.plans = state.plans.filter(p => p.id !== b.dataset.rm);
+      savePlans(); renderGrid(); renderDetail(); renderPlanSummary(); renderUpcoming();
+    }));
+
+  const noteEl = $("noteInput");
+  noteEl.value = state.notes[noteKey(state.year, state.season, day)] || "";
+  noteEl.oninput = () => {
+    const key = noteKey(state.year, state.season, day);
+    const text = noteEl.value.trim();
+    if (text) state.notes[key] = text; else delete state.notes[key];
+    saveNotes(); renderGrid(); renderUpcoming();
+  };
+
+  const btn = $("plantBtn");
+  const c = cropById($("cropSelect").value);
+  if (!c) { btn.hidden = true; return; }
+  btn.hidden = false;
+  const late = day + c.ripe > 30;
+  const replant = !c.regrow && $("replantChk").checked;
+  btn.textContent = late
+    ? `🌱 Too late for ${c.name} (ripens day ${day + c.ripe})`
+    : `🌱 Plant ${c.name} today (harvest day ${day + c.ripe})${replant ? " + replant" : ""}`;
+  btn.disabled = late;
+  btn.onclick = () => {
+    let d = day;
+    do {
+      state.plans.push({ id: String(Math.random()).slice(2), year: state.year, season: state.season, day: d, crop: c.id });
+      d += c.ripe; // replant on each harvest day
+    } while (replant && d + c.ripe <= 30);
+    savePlans(); renderGrid(); renderDetail(); renderPlanSummary(); renderUpcoming();
+  };
+}
+
+/* ---------- export / import / reset ---------- */
+
+function setDataStatus(msg) { $("dataStatus").textContent = msg; }
+
+function exportData() {
+  const json = JSON.stringify({
+    app: "mineral-town-calendar", version: 2,
+    player: state.player, plans: state.plans, notes: state.notes, today: state.today,
+  }, null, 2);
+  const filename = "mineral-town-calendar.json";
+  const useClaude = typeof window.claude !== "undefined" && typeof window.claude.use === "function";
+  if (useClaude) {
+    window.claude.use("downloads").then(dl => {
+      if (!dl) { setDataStatus("Export isn't available in this view."); return; }
+      return dl.save({ filename, data: json })
+        .then(() => setDataStatus("Exported."))
+        .catch(err => setDataStatus(err && err.code === "declined" ? "Export canceled." : "Export failed: " + (err && err.message || err)));
+    });
+  } else {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([json], { type: "application/json" }));
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setDataStatus("Exported " + filename + ".");
+  }
+}
+
+const validDate = d => d && d.season >= 0 && d.season <= 3 && d.day >= 1 && d.day <= 30;
+
+function importData(file) {
+  file.text().then(text => {
+    const obj = JSON.parse(text);
+    if (!obj || obj.app !== "mineral-town-calendar" || !Array.isArray(obj.plans)) {
+      setDataStatus("Not a Mineral Town Calendar file."); return;
+    }
+    state.plans = obj.plans.filter(p => p && cropById(p.crop) && p.year >= 1 && validDate(p))
+      .map(p => ({ id: String(p.id || Math.random()).slice(0, 20), year: +p.year, season: +p.season, day: +p.day, crop: p.crop }));
+    state.player = validDate(obj.player) ? { season: +obj.player.season, day: +obj.player.day } : null;
+    state.today = (obj.today && obj.today.year >= 1 && validDate(obj.today))
+      ? { year: +obj.today.year, season: +obj.today.season, day: +obj.today.day } : null;
+    state.notes = {};
+    if (obj.notes && typeof obj.notes === "object") {
+      for (const [k, v] of Object.entries(obj.notes)) {
+        if (/^\d+-[0-3]-\d+$/.test(k) && typeof v === "string" && v.trim()) state.notes[k] = v.slice(0, 500);
+      }
+    }
+    savePlans(); savePlayer(); saveNotes(); saveToday(); renderAll();
+    const n = state.plans.length, m = Object.keys(state.notes).length;
+    setDataStatus(`Imported ${n} crop plan${n === 1 ? "" : "s"}, ${m} note${m === 1 ? "" : "s"}` +
+      (state.player ? `, and your birthday (${SEASONS[state.player.season].name} ${state.player.day}).` : "."));
+  }).catch(() => setDataStatus("Couldn't read that file."));
+}
+
+$("resetBtn").addEventListener("click", () => {
+  const n = state.plans.length, m = Object.keys(state.notes).length;
+  $("resetCount").textContent = `${n} crop plan${n === 1 ? "" : "s"}, and ${m} note${m === 1 ? "" : "s"}`;
+  $("resetConfirm").hidden = false;
+  $("resetBtn").hidden = true;
+  setDataStatus("");
+});
+$("resetNo").addEventListener("click", () => {
+  $("resetConfirm").hidden = true;
+  $("resetBtn").hidden = false;
+});
+$("resetYes").addEventListener("click", () => {
+  state.plans = [];
+  state.player = null;
+  state.notes = {};
+  state.today = null;
+  state.filters = Object.assign({}, DEFAULT_FILTERS);
+  state.selectedDay = null;
+  try {
+    ["mtcal-plans", "mtcal-player", "mtcal-notes", "mtcal-today", "mtcal-filters"]
+      .forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
+  $("resetConfirm").hidden = true;
+  $("resetBtn").hidden = false;
+  renderAll();
+  setDataStatus("All data deleted.");
+});
+
+$("exportBtn").addEventListener("click", exportData);
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", e => {
+  if (e.target.files[0]) importData(e.target.files[0]);
+  e.target.value = "";
+});
+
+/* ---------- player birthday ---------- */
+
+function renderPlayerPanel() {
+  const sSel = $("pSeason"), dSel = $("pDay");
+  const p = state.player;
+  sSel.innerHTML = `<option value="">— not set —</option>` +
+    SEASONS.map((s, i) => `<option value="${i}"${p && p.season === i ? " selected" : ""}>${s.name}</option>`).join("");
+  dSel.disabled = !p;
+  dSel.innerHTML = Array.from({ length: 30 }, (_, i) =>
+    `<option value="${i + 1}"${p && p.day === i + 1 ? " selected" : ""}>${i + 1}</option>`).join("");
+
+  const clash = p && BIRTHDAYS.find(b => b[5] && b[0] === p.season && b[1] === p.day);
+  $("pNote").textContent = !p
+    ? "Set the birthday you picked in-game. A bachelor who shares it moves to his alternate day."
+    : clash
+      ? `${clash[2]} shares your birthday — his moves to ${SEASONS[clash[0]].name} ${clash[5]}.`
+      : `Your birthday: ${SEASONS[p.season].name} ${p.day}. No bachelor shares it.`;
+
+  sSel.onchange = () => {
+    state.player = sSel.value === "" ? null : { season: +sSel.value, day: state.player ? state.player.day : 1 };
+    savePlayer(); renderAll();
+  };
+  dSel.onchange = () => {
+    if (state.player) { state.player.day = +dSel.value; savePlayer(); renderAll(); }
+  };
+}
+
+/* ---------- main ---------- */
+
+function renderAll() {
+  setAccent();
+  renderTabs();
+  renderFilterBar();
+  renderCropPanel();
+  renderGrid();
+  renderUpcoming();
+  renderFestList();
+  renderPlayerPanel();
+  renderDetail();
+  $("yInput").value = state.year;
+}
+
+$("replantChk").addEventListener("change", renderDetail);
+
+function setYear(y) {
+  y = Math.min(999, Math.max(1, Math.floor(y) || 1));
+  if (y !== state.year) { state.year = y; state.selectedDay = null; }
+  renderAll();
+}
+$("yPrev").addEventListener("click", () => setYear(state.year - 1));
+$("yNext").addEventListener("click", () => setYear(state.year + 1));
+$("yInput").addEventListener("change", e => setYear(+e.target.value));
+$("yInput").addEventListener("keydown", e => { if (e.key === "Enter") e.target.blur(); });
+
+renderAll();
+</script>
