@@ -12294,7 +12294,7 @@
     "Black Grass"
    ],
    [
-    "Red magic Flower"
+    "Red Magic Flower"
    ]
   ],
   "optionalIngredients": [],
@@ -12336,7 +12336,7 @@
     "White Grass"
    ],
    [
-    "Red magic Flower"
+    "Red Magic Flower"
    ]
   ],
   "optionalIngredients": [],
@@ -12526,10 +12526,10 @@
   "mainEquipment": [],
   "mainIngredients": [
    [
-    "Red Magic Red Flower"
+    "Red Magic Flower"
    ],
    [
-    "Blue Magic Red Flower"
+    "Blue Magic Flower"
    ],
    [
     "Moondrop Flower"
@@ -12554,13 +12554,13 @@
   "mainEquipment": [],
   "mainIngredients": [
    [
-    "Fish (Small)"
+    "Small Fish"
    ],
    [
-    "Fish (Medium)"
+    "Medium Fish"
    ],
    [
-    "Fish (Large)"
+    "Large Fish"
    ],
    [
     "Fish Fossil"
@@ -12579,7 +12579,7 @@
   "mainEquipment": [],
   "mainIngredients": [
    [
-    "Egg (X)"
+    "X Egg"
    ],
    [
     "Mayonnaise (X)"
@@ -12891,7 +12891,7 @@ const ITEM_IMG = {
   "Bamboo Shoot": "bamboo-shoot.png",
   "Black Grass": "black-grass.png",
   "Blue Grass": "blue-grass.png",
-  "Blue Magic Red Flower": "blue-magic-flower.png",
+  "Blue Magic Flower": "blue-magic-flower.png",
   "Bodigizer": "bodigizer.png",
   "Bodigizer XL": "bodigizer-xl.png",
   "Boiled Egg": "boiled-egg.png",
@@ -12928,15 +12928,11 @@ const ITEM_IMG = {
   "Diamond": "diamond.png",
   "Dinner Roll": "dinner-roll.png",
   "Dumpling Powder": "dumpling-powder.png",
-  "Egg (X)": "x-egg.png",
   "Egg (any)": "egg.png",
   "Egg Over Rice": "egg-over-rice.png",
   "Eggplant": "eggplant.png",
   "Elli Leaves": "elli-leaves.png",
   "Emerald": "emerald.png",
-  "Fish (Large)": "large-fish.png",
-  "Fish (Medium)": "medium-fish.png",
-  "Fish (Small)": "small-fish.png",
   "Fish Fossil": "fossil.png",
   "Fish Sticks": "fish-sticks.png",
   "Flour": "flour.png",
@@ -13028,8 +13024,7 @@ const ITEM_IMG = {
   "Purple Grass": "purple-grass.png",
   "Raisin Bread": "raisin-bread.png",
   "Red Grass": "red-grass.png",
-  "Red Magic Red Flower": "red-magic-flower.png",
-  "Red magic Flower": "red-magic-flower.png",
+  "Red Magic Flower": "red-magic-flower.png",
   "Regular Quality Egg": "egg.png",
   "Relaxation Tea": "relaxation-tea.png",
   "Relaxation Tea Leaves": "relaxation-tea-leaves.png",
@@ -13322,7 +13317,7 @@ function computeOptimal(recipe, mode){
 const ING_FAMILIES = {
   'Cheese (any)': ['Cheese (S)','Cheese (M)','Cheese (L)','Cheese (G)','Cheese (P)','Cheese (X)'],
   'Milk (any)':   ['Milk (S)','Milk (M)','Milk (L)','Milk (G)','Milk (P)','Milk (X)'],
-  'Egg (any)':    ['Egg (X)','Regular Quality Egg','Good Quality Egg','High Quality Egg','Golden Egg','P Egg','X Egg']
+  'Egg (any)':    ['Regular Quality Egg','Good Quality Egg','High Quality Egg','Golden Egg','P Egg','X Egg']
 };
 function ingVariants(name){
   return ING_FAMILIES[name] ? [name].concat(ING_FAMILIES[name]) : [name];
