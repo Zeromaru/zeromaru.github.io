@@ -119,10 +119,11 @@
     gap:12px 18px;
   }
   .fb-name { flex:1 1 145px; min-width:0; max-width:230px; }
-  .fb-ing  { flex:1 1 165px; min-width:0; max-width:260px; }
+  .fb-ing  { flex:1 1 210px; min-width:0; max-width:280px; }
   .fb-equip{ flex:6 1 300px; min-width:0; }
-  .fb-mode { flex:1 1 160px; min-width:0; max-width:240px; }
-  .fb-sort { flex:1 1 145px; min-width:0; max-width:230px; }
+  /* Max-Power Mode and Sort By stack in one column */
+  .fb-stack{ flex:1 1 190px; min-width:0; max-width:250px; display:flex; flex-direction:column; gap:9px; }
+  .fav-chip{margin-top:7px;}
   .fb-reset{ align-self:flex-start; margin-left:auto; margin-top:23px; }  /* line up with the inputs, not the labels */
 
   /* compact versions of the pantry controls so the bar stays short */
@@ -245,6 +246,31 @@
   .ing-pill button:hover{background:rgba(255,255,255,.4);}
 
   .switch-row{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft); margin-top:8px; cursor:pointer;}
+  .switch-row.dim{opacity:.45; pointer-events:none;}
+
+  /* ingredient filter mode: "uses all selected" vs "what can I cook" */
+  .ing-mode{display:flex; margin-top:7px; border:1.5px solid var(--line); border-radius:9px; overflow:hidden; width:100%;}
+  .ing-mode-btn{
+    flex:1 1 0; min-width:0; text-align:center; white-space:nowrap;
+    font-family:inherit; font-size:11px; font-weight:600; padding:5px 6px;
+    background:var(--paper-dim); border:none; cursor:pointer; color:var(--ink-soft); transition:.15s;
+  }
+  .ing-mode-btn + .ing-mode-btn{border-left:1.5px solid var(--line);}
+  .ing-mode-btn.active{background:var(--green-dark); color:#fff;}
+
+  /* cook-mode banner on a card */
+  .cook-badge{font-size:12.5px; padding:6px 10px; border-radius:8px; margin-bottom:6px;}
+  .cook-badge.ok{background:#E7F0E2; color:var(--green-dark); font-weight:700;}
+  .cook-badge.miss{background:#FBF1DC; color:#8A5C13;}
+  .cook-badge.miss b{font-weight:700;}
+
+  /* favorite star on a card */
+  .fav-btn{
+    background:none; border:none; cursor:pointer; font-size:20px; line-height:1;
+    color:#CFC8B8; padding:0 2px; flex-shrink:0; transition:.15s;
+  }
+  .fav-btn:hover{color:var(--gold); transform:scale(1.15);}
+  .fav-btn.on{color:var(--gold);}
   .switch-row input{accent-color:var(--green); width:15px; height:15px; cursor:pointer;}
 
   select.sort-select{
@@ -311,6 +337,11 @@
   .tag.tool{border-color:#C7D6BC; background:#F1F6EC; color:var(--green-dark);}
   .tag.season{border-color:#EAD6A6; background:#FBF1DC; color:#8A5C13;}
   .tag.none{border-style:dashed; color:var(--ink-soft);}
+
+  /* clickable item name on a card: toggles that item in the filter bar */
+  .name-link{cursor:pointer;}
+  .name-link:hover{text-decoration:underline; color:var(--gold);}
+  .tag.name-link:hover{text-decoration:none; border-color:var(--gold); box-shadow:0 0 0 1px var(--gold);}
 
   .ingredients-text{font-size:13.5px; line-height:1.65; color:var(--ink);}
   .ingredients-text .or{color:var(--ink-soft); font-style:italic;}
@@ -426,6 +457,7 @@
         <span class="clear-link" id="clearName">Clear</span>
       </div>
       <input id="nameSearch" class="search-input" type="text" placeholder="e.g. Curry, Cake...">
+      <button class="toggle-chip fav-chip" id="favToggle" title="Only show dishes you starred">&#9733; Show favorite only</button>
     </div>
 
     <div class="field fb-ing">
@@ -436,6 +468,10 @@
       <div class="autocomplete">
         <input id="ingSearch" class="search-input" type="text" placeholder="Type an ingredient...">
         <div class="ac-list" id="acList"></div>
+      </div>
+      <div class="ing-mode" id="ingMode">
+        <button class="ing-mode-btn active" data-mode="contain" title="Show dishes that use every selected ingredient">Uses all selected</button>
+        <button class="ing-mode-btn" data-mode="cook" title="Treat the selection as your pantry: show dishes you can cook now, plus dishes missing up to 2 ingredients">What can I cook?</button>
       </div>
       <div class="selected-ing" id="selectedIng"></div>
       <label class="switch-row">
@@ -454,25 +490,28 @@
       </div>
     </div>
 
-    <div class="field fb-mode">
-      <div class="field-label">Max-Power Mode &#128293;</div>
-      <select class="sort-select" id="optModeSelect" title="Works out what to fill the remaining ingredient slots with (out of 8 total) for the biggest boost — shown on each card.">
-        <option value="hp" selected>Prioritize Stamina (default)</option>
-        <option value="rp">Prioritize Fatigue</option>
-        <option value="combined">Combined Stamina + Fatigue</option>
-      </select>
-    </div>
-
-    <div class="field fb-sort">
-      <div class="field-label">Sort By</div>
-      <select class="sort-select" id="sortSelect">
-        <option value="game-asc" selected>In-Game Order</option>
-        <option value="name-asc">Name (A–Z)</option>
-        <option value="hp-desc">Stamina (High → Low)</option>
-        <option value="hp-asc">Stamina (Low → High)</option>
-        <option value="rp-desc">Fatigue (High → Low)</option>
-        <option value="rp-asc">Fatigue (Low → High)</option>
-      </select>
+    <div class="fb-stack">
+      <div class="field">
+        <div class="field-label">Max-Power Mode &#128293;</div>
+        <select class="sort-select" id="optModeSelect" title="Works out what to fill the remaining ingredient slots with (out of 8 total) for the biggest boost — shown on each card.">
+          <option value="hp" selected>Prioritize Stamina (default)</option>
+          <option value="rp">Prioritize Fatigue</option>
+          <option value="combined">Combined Stamina + Fatigue</option>
+        </select>
+      </div>
+      <div class="field">
+        <div class="field-label">Sort By</div>
+        <select class="sort-select" id="sortSelect">
+          <option value="game-asc" selected>In-Game Order</option>
+          <option value="name-asc">Name (A–Z)</option>
+          <option value="hp-desc">Stamina (High → Low)</option>
+          <option value="hp-asc">Stamina (Low → High)</option>
+          <option value="rp-desc">Fatigue (High → Low)</option>
+          <option value="rp-asc">Fatigue (Low → High)</option>
+          <option value="maxhp-desc">Max Stamina w/ Bonus (High → Low)</option>
+          <option value="maxrp-desc">Max Fatigue w/ Bonus (High → Low)</option>
+        </select>
+      </div>
     </div>
 
     <button class="reset-btn fb-reset" id="resetAll" title="Reset all filters to default" aria-label="Reset all filters to default"><span class="reset-ico">↺</span>Reset all filters</button>
@@ -13124,10 +13163,22 @@ const state = {
   equip: new Set(),
   noEquipOnly:false,
   ingredients: new Set(),
+  ingMode:'contain',      // 'contain' = dish uses all selected; 'cook' = selection is the pantry
   includeOptionalIng:false,
+  favsOnly:false,
   sort:'game-asc',
   optMode:'hp'
 };
+
+// ---------- favorites (persisted per browser) ----------
+const FAV_KEY = 'hmRecipesFavorites';
+const favorites = (()=>{
+  try{ return new Set(JSON.parse(localStorage.getItem(FAV_KEY)||'[]')); }
+  catch(e){ return new Set(); }
+})();
+function saveFavs(){
+  try{ localStorage.setItem(FAV_KEY, JSON.stringify(Array.from(favorites))); }catch(e){}
+}
 
 // ---------- render hero stats ----------
 document.getElementById('heroStats').innerHTML = `
@@ -13210,6 +13261,18 @@ document.getElementById('includeOptional').addEventListener('change', (e)=>{
   render();
 });
 
+document.querySelectorAll('#ingMode .ing-mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    state.ingMode = btn.dataset.mode;
+    render();
+  });
+});
+
+document.getElementById('favToggle').addEventListener('click', ()=>{
+  state.favsOnly = !state.favsOnly;
+  render();
+});
+
 document.getElementById('sortSelect').addEventListener('change', (e)=>{
   state.sort = e.target.value;
   render();
@@ -13232,7 +13295,9 @@ document.getElementById('resetAll').addEventListener('click', ()=>{
   state.equip.clear();
   state.noEquipOnly = false;
   state.ingredients.clear();
+  state.ingMode = 'contain';
   state.includeOptionalIng = false;
+  state.favsOnly = false;
   state.sort = 'game-asc';
   state.optMode = 'hp';
 
@@ -13242,6 +13307,31 @@ document.getElementById('resetAll').addEventListener('click', ()=>{
   document.getElementById('includeOptional').checked = false;
   document.getElementById('sortSelect').value = state.sort;
   document.getElementById('optModeSelect').value = state.optMode;
+  render();
+});
+
+// ---------- click an item name on a card to toggle it in the filters ----------
+// Delegated on the grid because render() rebuilds every card.
+document.getElementById('grid').addEventListener('click', (e)=>{
+  const el = e.target.closest('[data-ing],[data-equip]');
+  if(!el) return;
+  if(el.dataset.ing !== undefined){
+    const name = el.dataset.ing;
+    if(state.ingredients.has(name)){
+      state.ingredients.delete(name);
+    } else {
+      state.ingredients.add(name);
+      // a bonus ingredient only matches with the optional-ingredient search on
+      if(el.dataset.bonus !== undefined && !state.includeOptionalIng){
+        state.includeOptionalIng = true;
+        document.getElementById('includeOptional').checked = true;
+      }
+    }
+  } else {
+    const name = el.dataset.equip;
+    if(state.equip.has(name)) state.equip.delete(name);
+    else { state.equip.add(name); state.noEquipOnly = false; }
+  }
   render();
 });
 
@@ -13323,8 +13413,23 @@ function ingVariants(name){
   return ING_FAMILIES[name] ? [name].concat(ING_FAMILIES[name]) : [name];
 }
 
+// 'cook' mode: the selected ingredients are the pantry.
+// A selected item fills a group slot if it is the listed item or a size of its family.
+function ingCovers(sel, a){
+  return ingVariants(a).includes(sel) || ingVariants(sel).includes(a);
+}
+// main-ingredient groups the pantry cannot fill
+function cookMissing(r){
+  const sel = Array.from(state.ingredients);
+  return r.mainIngredients.filter(g => !g.some(a => sel.some(s => ingCovers(s,a))));
+}
+// dishes missing more than this many ingredients are hidden in cook mode
+const COOK_MISS_MAX = 2;
+
 function recipeMatches(r){
   if(state.nameQuery && !r.name.toLowerCase().includes(state.nameQuery)) return false;
+
+  if(state.favsOnly && !favorites.has(r.name)) return false;
 
   if(state.noEquipOnly && r.mainEquipment.length>0) return false;
 
@@ -13336,16 +13441,24 @@ function recipeMatches(r){
   }
 
   if(state.ingredients.size>0){
-    const mainNames = new Set();
-    r.mainIngredients.forEach(g=>g.forEach(a=>mainNames.add(a)));
-    let pool = mainNames;
-    if(state.includeOptionalIng){
-      pool = new Set(mainNames);
-      r.optionalIngredients.forEach(i=>pool.add(i.name));
+    if(state.ingMode==='cook'){
+      const groups = r.mainIngredients.length;
+      const missing = cookMissing(r).length;
+      if(missing > COOK_MISS_MAX) return false;
+      // the pantry has to fill at least one slot, or the list floods with unrelated short recipes
+      if(groups > 0 && missing === groups) return false;
+    } else {
+      const mainNames = new Set();
+      r.mainIngredients.forEach(g=>g.forEach(a=>mainNames.add(a)));
+      let pool = mainNames;
+      if(state.includeOptionalIng){
+        pool = new Set(mainNames);
+        r.optionalIngredients.forEach(i=>pool.add(i.name));
+      }
+      // same rule as equipment: every picked ingredient has to be in the dish
+      const hasAll = Array.from(state.ingredients).every(sel=>ingVariants(sel).some(n=>pool.has(n)));
+      if(!hasAll) return false;
     }
-    // same rule as equipment: every picked ingredient has to be in the dish
-    const hasAll = Array.from(state.ingredients).every(sel=>ingVariants(sel).some(n=>pool.has(n)));
-    if(!hasAll) return false;
   }
 
   return true;
@@ -13367,7 +13480,7 @@ function sortRecipes(list){
 // ---------- rendering helpers ----------
 function renderIngredientText(groups){
   if(groups.length===0) return '<span class="or">— (No fixed main ingredient — see bonus ingredients below)</span>';
-  const withIcon = x => itemIcon(x,'ico-sm') + x;
+  const withIcon = x => `<span class="name-link" data-ing="${x}" title="Filter by this ingredient">${itemIcon(x,'ico-sm')}${x}</span>`;
   return groups.map(g=>{
     if(g.length===1) return withIcon(g[0]);
     return '(' + g.map(withIcon).join(' <span class="or">or</span> ') + ')';
@@ -13376,7 +13489,7 @@ function renderIngredientText(groups){
 
 function equipTag(name){
   const cls = SEASONINGS.has(name) ? 'season' : 'tool';
-  return `<span class="tag ${cls}">${itemIcon(name,'ico-sm')}${name}</span>`;
+  return `<span class="tag ${cls} name-link" data-equip="${name}" title="Filter by this equipment">${itemIcon(name,'ico-sm')}${name}</span>`;
 }
 
 function fmtDelta(hp,rp){
@@ -13385,14 +13498,18 @@ function fmtDelta(hp,rp){
   return `<span class="delta"><span class="h">${h}</span> / <span class="r">${r}</span></span>`;
 }
 
-function extraList(items, pickedIdx){
+function extraList(items, pickedIdx, kind){
   pickedIdx = pickedIdx || new Set();
   if(items.length===0) return '<div class="ac-empty" style="padding:2px 0;">None</div>';
+  // kind 'ing' marks a bonus ingredient (data-bonus turns on the optional-ingredient search on click)
+  const tap = kind==='equip'
+    ? n => `data-equip="${n}" title="Filter by this equipment"`
+    : n => `data-ing="${n}" data-bonus title="Filter by this ingredient"`;
   return '<div class="extra-list">' + items.map((i,idx)=>{
     const isPicked = pickedIdx.has(idx);
     return `
     <div class="extra-item ${isPicked?'picked':''}">
-      <span class="nm">${isPicked?'<span class=\"pick-flag\">🔥</span>':''}${i.recommended?'<span class=\"star\">★</span>':''}${itemIcon(i.name,'ico-sm')}${i.name}</span>
+      <span class="nm name-link" ${tap(i.name)}>${isPicked?'<span class=\"pick-flag\">🔥</span>':''}${i.recommended?'<span class=\"star\">★</span>':''}${itemIcon(i.name,'ico-sm')}${i.name}</span>
       ${fmtDelta(i.hp,i.rp)}
     </div>
   `;
@@ -13410,7 +13527,7 @@ function renderOptBox(v, opt){
     return `<div class="optbox"><div class="optbox-title">🔥 Bonus Ingredient Suggestion</div><div class="optbox-none">${opt.remaining} slot(s) left, but no bonus ingredient improves the selected stat.</div></div>`;
   }
   const itemsHtml = opt.chosen.map(c=>`
-    <span class="optbox-item${c.filler?' filler':''}">${itemIcon(c.name,'ico-sm')}<b>${c.name}</b> ${fmtDelta(c.hp,c.rp)}</span>
+    <span class="optbox-item${c.filler?' filler':''}"><span class="name-link" data-ing="${c.name}" data-bonus title="Filter by this ingredient">${itemIcon(c.name,'ico-sm')}<b>${c.name}</b></span> ${fmtDelta(c.hp,c.rp)}</span>
   `).join('');
   const fillerCount = opt.chosen.filter(c=>c.filler).length;
   const fillerNote = fillerCount
@@ -13447,6 +13564,7 @@ function buildCard(group){
     <div class="card-body">
       <div class="card-top">
         <div class="card-name">${itemIcon(first.name,'ico-dish')}${first.name}</div>
+        <button class="fav-btn ${favorites.has(first.name)?'on':''}" title="Toggle favorite">★</button>
         <div class="card-meta"><span class="dish-code">${dishCode(first.name)}</span></div>
       </div>
       ${tabsHtml}
@@ -13468,7 +13586,17 @@ function buildCard(group){
 
     const opt = computeOptimal(v, state.optMode);
 
+    // cook mode: can this variant be made from the pantry, and if not what is missing
+    let cookHtml = '';
+    if(state.ingMode==='cook' && state.ingredients.size>0){
+      const missing = cookMissing(v);
+      cookHtml = missing.length===0
+        ? '<div class="cook-badge ok">✔ You can cook this now</div>'
+        : `<div class="cook-badge miss"><b>Missing ${missing.length}:</b> ${missing.map(g=>g.map(a=>`<span class="name-link" data-ing="${a}" title="Add to your ingredients">${itemIcon(a,'ico-sm')}${a}</span>`).join(' <span class="or">or</span> ')).join(', ')}</div>`;
+    }
+
     panel.innerHTML = `
+      ${cookHtml}
       <div class="row-label">Main Equipment</div>
       <div class="equip-line">${v.mainEquipment.length? v.mainEquipment.slice().sort(cmpEquip).map(equipTag).join('') : '<span class="tag none">No main equipment needed</span>'}</div>
       <div class="row-label">Main Ingredients <span style="font-weight:400;color:var(--ink-soft);text-transform:none;">(${opt.mainSlots}/${TOTAL_SLOTS} slots)</span></div>
@@ -13478,9 +13606,9 @@ function buildCard(group){
 
     extra.innerHTML = `
       <div class="extra-grp-title">Bonus Ingredients (${v.optionalIngredients.length})</div>
-      ${extraList(v.optionalIngredients, opt.chosenIdx)}
+      ${extraList(v.optionalIngredients, opt.chosenIdx, 'ing')}
       <div class="extra-grp-title">Bonus Equipment (${v.optionalEquipment.length})</div>
-      ${extraList(v.optionalEquipment.slice().sort((a,b)=>cmpEquip(a.name,b.name)))}
+      ${extraList(v.optionalEquipment.slice().sort((a,b)=>cmpEquip(a.name,b.name)), null, 'equip')}
     `;
   }
 
@@ -13502,6 +13630,13 @@ function buildCard(group){
     expandBtn.classList.toggle('open');
   });
 
+  card.querySelector('.fav-btn').addEventListener('click', ()=>{
+    if(favorites.has(first.name)) favorites.delete(first.name);
+    else favorites.add(first.name);
+    saveFavs();
+    render();
+  });
+
   return card;
 }
 
@@ -13511,6 +13646,14 @@ function render(){
     c.classList.toggle('active', state.equip.has(c.dataset.eq));
   });
   document.getElementById('noEquipToggle').classList.toggle('active', state.noEquipOnly);
+  document.getElementById('favToggle').classList.toggle('active', state.favsOnly);
+  document.querySelectorAll('#ingMode .ing-mode-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.mode===state.ingMode);
+  });
+  // the bonus-ingredient switch only applies to "uses all selected" matching
+  const inclEl = document.getElementById('includeOptional');
+  inclEl.disabled = state.ingMode==='cook';
+  inclEl.closest('.switch-row').classList.toggle('dim', state.ingMode==='cook');
 
   // update selected ingredient pills
   const selIngEl = document.getElementById('selectedIng');
@@ -13548,7 +13691,8 @@ function render(){
   if(state.nameQuery) af.push('Name: "'+state.nameQuery+'"');
   if(state.noEquipOnly) af.push('No main equipment');
   if(state.equip.size>0) af.push('Equipment: ' + Array.from(state.equip).join(' + '));
-  if(state.ingredients.size>0) af.push('Ingredient: ' + Array.from(state.ingredients).join(' + '));
+  if(state.ingredients.size>0) af.push((state.ingMode==='cook'?'Cook from: ':'Ingredient: ') + Array.from(state.ingredients).join(' + '));
+  if(state.favsOnly) af.push('★ Favorites');
   document.getElementById('activeFilters').innerHTML = af.map(a=>`<span class="af-pill">${a}</span>`).join('');
 
   // render grid
@@ -13578,11 +13722,24 @@ function sortGroups(groupList){
     case 'hp-asc': arr.sort((a,b)=>Math.min(...a.map(x=>x.hp)) - Math.min(...b.map(x=>x.hp))); break;
     case 'rp-desc': arr.sort((a,b)=>Math.max(...b.map(x=>x.rp)) - Math.max(...a.map(x=>x.rp))); break;
     case 'rp-asc': arr.sort((a,b)=>Math.min(...a.map(x=>x.rp)) - Math.min(...b.map(x=>x.rp))); break;
+    case 'maxhp-desc': arr.sort((a,b)=>Math.max(...b.map(x=>x._maxHp)) - Math.max(...a.map(x=>x._maxHp))); break;
+    case 'maxrp-desc': arr.sort((a,b)=>Math.max(...b.map(x=>x._maxRp)) - Math.max(...a.map(x=>x._maxRp))); break;
     case 'game-asc': arr.sort((a,b)=>gameIndex(rep(a).name)-gameIndex(rep(b).name)); break;
     default: arr.sort((a,b)=>rep(a).name.localeCompare(rep(b).name));
   }
+  // cook mode: dishes you can cook now come first, then missing 1, then missing 2 (stable sort keeps the order above within each tier)
+  if(state.ingMode==='cook' && state.ingredients.size>0){
+    const miss = g => Math.min(...g.map(x=>cookMissing(x).length));
+    arr.sort((a,b)=>miss(a)-miss(b));
+  }
   return arr;
 }
+
+// best possible stats after filling the bonus slots, precomputed once for sorting
+RAW_RECIPES.forEach(r=>{
+  r._maxHp = computeOptimal(r,'hp').maxHp;
+  r._maxRp = computeOptimal(r,'rp').maxRp;
+});
 
 render();
 </script>
