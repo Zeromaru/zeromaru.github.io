@@ -21,6 +21,13 @@
     --plant: #4E8A3E;
     --harvest: #A06B1F;
     --birthday: #B05B7C;
+    --sp-bold: #8A5CB0;
+    --sp-staid: #3E72C0;
+    --sp-aqua: #1E8E86;
+    --sp-timid: #4E8A3E;
+    --sp-hoggy: #A07A12;
+    --sp-chef: #B3543E;
+    --sp-nappy: #C4732B;
     --shadow: 0 1px 3px rgba(40, 36, 20, .10), 0 4px 14px rgba(40, 36, 20, .06);
   }
   @media (prefers-color-scheme: dark) {
@@ -39,6 +46,13 @@
       --plant: #7FBF6C;
       --harvest: #D3A055;
       --birthday: #D68BA8;
+    --sp-bold: #B694DB;
+    --sp-staid: #86ABE6;
+    --sp-aqua: #6BC7BC;
+    --sp-timid: #8FC47A;
+    --sp-hoggy: #D9B85C;
+    --sp-chef: #D98A73;
+    --sp-nappy: #DB955A;
       --shadow: 0 1px 3px rgba(0, 0, 0, .4);
     }
   }
@@ -57,6 +71,13 @@
     --plant: #7FBF6C;
     --harvest: #D3A055;
     --birthday: #D68BA8;
+    --sp-bold: #B694DB;
+    --sp-staid: #86ABE6;
+    --sp-aqua: #6BC7BC;
+    --sp-timid: #8FC47A;
+    --sp-hoggy: #D9B85C;
+    --sp-chef: #D98A73;
+    --sp-nappy: #DB955A;
     --shadow: 0 1px 3px rgba(0, 0, 0, .4);
   }
 
@@ -268,6 +289,47 @@
   }
   .confirm-box p { margin-bottom: 8px; }
 
+  /* --- harvest sprite hiring --- */
+  .chip.hire { background: color-mix(in srgb, var(--c) 16%, var(--surface)); color: var(--c); font-weight: 600; }
+  .chip.warn {
+    background: color-mix(in srgb, var(--sunday) 16%, var(--surface));
+    color: var(--sunday); font-weight: 700;
+  }
+  .detail-list li.hire { border-left-color: var(--c); }
+  .detail-list li.warn { border-left-color: var(--sunday); }
+
+  .alerts { max-width: 1180px; margin: 0 auto 12px; display: flex; flex-direction: column; gap: 6px; }
+  .alert {
+    border: 1px solid color-mix(in srgb, var(--sunday) 45%, var(--line));
+    border-left: 4px solid var(--sunday);
+    background: color-mix(in srgb, var(--sunday) 9%, var(--surface));
+    border-radius: 8px; padding: 8px 12px; font-size: .86rem;
+  }
+  .alert.info {
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+    border-left-color: var(--accent); background: var(--accent-soft);
+  }
+
+  .pick-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .pick {
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink-soft);
+    border-radius: 20px; padding: 4px 11px; font-size: .78rem; cursor: pointer;
+    font-family: inherit; display: inline-flex; align-items: center; gap: 5px;
+  }
+  .pick .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--c, var(--accent)); flex-shrink: 0; }
+  .pick.on {
+    border-color: var(--c, var(--accent)); color: var(--ink); font-weight: 600;
+    background: color-mix(in srgb, var(--c, var(--accent)) 16%, var(--surface));
+  }
+  .pick.wide { flex: 1 1 0; justify-content: center; }
+  .hire-btn { background: var(--birthday); }
+  :root[data-theme="dark"] .hire-btn { color: #2a1620; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .hire-btn { color: #2a1620; } }
+  .hire-list { list-style: none; display: flex; flex-direction: column; gap: 7px; font-size: .8rem; margin-top: 6px; }
+  .hire-list li { border-left: 3px solid var(--c, var(--line)); padding: 2px 0 2px 8px; }
+  .hire-list .st { color: var(--ink-soft); font-size: .74rem; }
+  .hire-list .st.warn { color: var(--sunday); font-weight: 700; }
+
   .tips {
     margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
     color: var(--ink-soft); font-size: .78rem;
@@ -277,7 +339,7 @@
 
 <header class="top">
   <h1>Mineral Town Calendar</h1>
-  <span class="subtitle">Harvest Moon: More Friends of Mineral Town (GBA) — birthdays · festivals · crop planner</span>
+  <span class="subtitle">Harvest Moon: More Friends of Mineral Town (GBA) — birthdays · festivals · crop planner · sprite hiring</span>
   <div class="year-picker">
     <button id="yPrev" aria-label="Previous year">−</button>
     <label class="year-label">Year <input id="yInput" type="number" min="1" max="999" value="1" aria-label="Year number"></label>
@@ -286,6 +348,8 @@
 </header>
 
 <nav class="season-tabs" id="tabs"></nav>
+
+<div class="alerts" id="alerts"></div>
 
 <div class="layout">
   <div class="calendar-card">
@@ -297,6 +361,7 @@
       <span class="chip gift">🎁 Gift prep</span>
       <span class="chip plant">🌱 Planting</span>
       <span class="chip harvest">🧺 Harvest</span>
+      <span class="chip hire" style="--c:var(--sp-bold)">🧚 Sprite work</span>
       <span class="chip note">📝 Note</span>
       <span>Click a day for details / planting</span>
     </div>
@@ -349,13 +414,23 @@
     </section>
 
     <section class="panel">
+      <h2>🧚 Hire Harvest Sprites</h2>
+      <div class="pick-row" id="spritePicker"></div>
+      <div class="pick-row" id="jobPicker"></div>
+      <div class="pick-row" id="durPicker"></div>
+      <button class="plant-btn hire-btn" id="hireBtn"></button>
+      <p class="muted" id="hireNote" style="margin-top:8px"></p>
+      <div class="summary" id="hireList"></div>
+    </section>
+
+    <section class="panel">
       <h2>🎪 <span class="accent" id="festSeason"></span> Festivals</h2>
       <ul class="fest-list" id="festList"></ul>
     </section>
 
     <section class="panel">
       <h2>💾 Your Data</h2>
-      <p class="muted">Your birthday, crop plans, notes, and today marker are saved in this browser automatically. Export them to a file to back up or move to another device.</p>
+      <p class="muted">Your birthday, crop plans, sprite contracts, notes, and today marker are saved in this browser automatically. Export them to a file to back up or move to another device.</p>
       <div class="btn-row">
         <button class="data-btn" id="exportBtn">Export file</button>
         <button class="data-btn" id="importBtn">Import file</button>
@@ -500,10 +575,30 @@ const CROP_IMG = {
 };
 const cropIcon = c => `<img class="crop-ico" src="${CROP_IMG[c.id]}" alt="">`;
 
-const DEFAULT_FILTERS = { bachelor: true, bachelorette: true, villager: true, sprite: true, festival: true, gifts: false };
+// The 7 harvest sprites, in birthday order. Each one likes the grass of its own colour.
+const SPRITES = [
+  { id: "bold",  name: "Bold",  color: "var(--sp-bold)",  grass: "Purple Grass" },
+  { id: "staid", name: "Staid", color: "var(--sp-staid)", grass: "Blue Grass" },
+  { id: "aqua",  name: "Aqua",  color: "var(--sp-aqua)",  grass: "Aquamarine Grass" },
+  { id: "timid", name: "Timid", color: "var(--sp-timid)", grass: "Green Grass" },
+  { id: "hoggy", name: "Hoggy", color: "var(--sp-hoggy)", grass: "Yellow Grass" },
+  { id: "chef",  name: "Chef",  color: "var(--sp-chef)",  grass: "Red Grass" },
+  { id: "nappy", name: "Nappy", color: "var(--sp-nappy)", grass: "Orange Grass" },
+];
+const SPRITE_JOBS = [
+  { id: "water",   name: "Watering",    icon: "💧", sub: "Waters the tilled squares every morning" },
+  { id: "harvest", name: "Harvesting",  icon: "🧺", sub: "Picks the ripe crops and ships them" },
+  { id: "animal",  name: "Animal care", icon: "🐄", sub: "Feeds and brushes the animals in the barn" },
+];
+const HIRE_DAYS = [1, 3, 7];
+const spriteById = id => SPRITES.find(s => s.id === id) || SPRITES[0];
+const jobById = id => SPRITE_JOBS.find(j => j.id === id) || SPRITE_JOBS[0];
+
+const DEFAULT_FILTERS = { bachelor: true, bachelorette: true, villager: true, sprite: true, festival: true, gifts: false, hire: true };
 const FILTER_DEFS = [
   ["bachelor", "Bachelors"], ["bachelorette", "Rival girls"], ["villager", "Villagers"],
-  ["sprite", "Sprites & special"], ["festival", "Festivals"], ["gifts", "🎁 Gift prep"],
+  ["sprite", "Sprites & special"], ["festival", "Festivals"],
+  ["hire", "🧚 Sprite work"], ["gifts", "🎁 Gift prep"],
 ];
 
 function loadLS(key, fallback) {
@@ -521,12 +616,15 @@ const state = {
   notes: loadLS("mtcal-notes", {}),
   today: loadLS("mtcal-today", null),
   filters: Object.assign({}, DEFAULT_FILTERS, loadLS("mtcal-filters", {})),
+  hires: loadLS("mtcal-hires", []),
+  hirePick: { sprite: SPRITES[0].id, job: SPRITE_JOBS[0].id, days: HIRE_DAYS[1] },
 };
 const savePlans = () => saveLS("mtcal-plans", state.plans);
 const savePlayer = () => saveLS("mtcal-player", state.player);
 const saveNotes = () => saveLS("mtcal-notes", state.notes);
 const saveToday = () => saveLS("mtcal-today", state.today);
 const saveFilters = () => saveLS("mtcal-filters", state.filters);
+const saveHires = () => saveLS("mtcal-hires", state.hires);
 
 // Year 1 Spring 1 = Sunday; a year is 120 days, so weekdays shift by 1 each year
 const dow = (year, season, day) => ((year - 1) * 120 + season * 30 + day - 1) % 7;
@@ -564,6 +662,32 @@ function giftRemindersOn(season, day) {
 }
 function isToday(year, season, day) {
   return !!state.today && state.today.year === year && state.today.season === season && state.today.day === day;
+}
+
+// A contract runs for `days` days starting on its start date; the last work day is the end date.
+const hireStart = h => absOf(h.year, h.season, h.day);
+const hireEnd = h => hireStart(h) + h.days - 1;
+const fmtAbs = abs => {
+  const d = dateOf(abs);
+  return `${SEASONS[d.season].name} ${d.day}` + (d.year === state.year ? "" : `, Y${d.year}`);
+};
+// contracts covering this day, with the day number inside the contract (1-based)
+function hiresOn(year, season, day) {
+  const a = absOf(year, season, day);
+  return state.hires
+    .filter(h => a >= hireStart(h) && a <= hireEnd(h))
+    .map(h => ({ h, n: a - hireStart(h) + 1 }))
+    .sort((x, y) => hireStart(x.h) - hireStart(y.h));
+}
+// reminder one day before the contract ends (a 1-day contract has no room for it)
+function endingSoonOn(year, season, day) {
+  const a = absOf(year, season, day);
+  return state.hires.filter(h => h.days > 1 && hireEnd(h) - 1 === a);
+}
+// a sprite can only hold one job at a time
+function spriteBusy(spriteId, startAbs, days) {
+  const endAbs = startAbs + days - 1;
+  return state.hires.find(h => h.sprite === spriteId && startAbs <= hireEnd(h) && endAbs >= hireStart(h));
 }
 
 /* ---------- render ---------- */
@@ -626,6 +750,14 @@ function renderGrid() {
       if (p.day === day) chips.push(`<span class="chip plant">🌱 ${cropIcon(c)} ${c.name}</span>`);
       if (harvestDays(p).includes(day)) chips.push(`<span class="chip harvest">🧺 ${cropIcon(c)} ${c.name}</span>`);
     });
+    if (state.filters.hire) {
+      hiresOn(state.year, state.season, day).forEach(({ h, n }) => {
+        const sp = spriteById(h.sprite), job = jobById(h.job);
+        chips.push(`<span class="chip hire" style="--c:${sp.color}">🧚 ${sp.name} ${job.icon} ${n === h.days ? "last day" : n + "/" + h.days}</span>`);
+      });
+      endingSoonOn(state.year, state.season, day).forEach(h =>
+        chips.push(`<span class="chip warn">⏰ ${spriteById(h.sprite).name} ends tomorrow</span>`));
+    }
     const note = state.notes[noteKey(state.year, state.season, day)];
     if (note) chips.push(`<span class="chip note">📝 ${note.replace(/</g, "&lt;")}</span>`);
 
@@ -638,7 +770,10 @@ function renderGrid() {
   }
   g.innerHTML = html;
   g.querySelectorAll(".cell[data-day]").forEach(el =>
-    el.addEventListener("click", () => { state.selectedDay = +el.dataset.day; renderGrid(); renderDetail(); }));
+    el.addEventListener("click", () => {
+      state.selectedDay = +el.dataset.day;
+      renderGrid(); renderDetail(); renderSpritePanel();
+    }));
 }
 
 function renderUpcoming() {
@@ -664,6 +799,13 @@ function renderUpcoming() {
       if (p.day === day) push(`🌱 Plant ${cropIcon(c)} <strong>${c.name}</strong>`);
       if (harvestDays(p).includes(day)) push(`🧺 Harvest ${cropIcon(c)} <strong>${c.name}</strong>`);
     });
+    hiresOn(year, season, day).forEach(({ h, n }) => {
+      const sp = spriteById(h.sprite), job = jobById(h.job);
+      if (n === 1) push(`🧚 <strong>${sp.name}</strong> starts ${job.name.toLowerCase()} · ${h.days} day${h.days === 1 ? "" : "s"}`);
+      else if (n === h.days) push(`🏁 <strong>${sp.name}</strong>'s ${job.name.toLowerCase()} contract ends today`);
+    });
+    endingSoonOn(year, season, day).forEach(h =>
+      push(`⏰ <strong>${spriteById(h.sprite).name}</strong>'s contract ends tomorrow`));
     const note = state.notes[noteKey(year, season, day)];
     if (note) push(`📝 ${note.replace(/</g, "&lt;")}`);
   }
@@ -791,12 +933,29 @@ function renderDetail() {
                   <span class="sub">(planted day ${p.day} · sells ${c.sell}G each)</span></li>`);
     }
   });
+  hiresOn(state.year, state.season, day).forEach(({ h, n }) => {
+    const sp = spriteById(h.sprite), job = jobById(h.job);
+    const range = `${fmtAbs(hireStart(h))} → ${fmtAbs(hireEnd(h))}`;
+    items.push(`<li class="hire" style="--c:${sp.color}"><span class="t">🧚 ${sp.name} — ${job.icon} ${job.name}</span>
+                ${n === 1 ? `<button class="rm" data-rmhire="${h.id}">cancel</button>` : ""}<br>
+                <span class="sub">Day ${n} of ${h.days} · ${range}${n === h.days ? " · last day of the contract" : ""}</span></li>`);
+  });
+  endingSoonOn(state.year, state.season, day).forEach(h => {
+    const sp = spriteById(h.sprite), job = jobById(h.job);
+    items.push(`<li class="warn"><span class="t">⏰ ${sp.name}'s contract ends tomorrow</span><br>
+                <span class="sub">Last work day: ${fmtAbs(hireEnd(h))} — hire again if you still need ${job.name.toLowerCase()}.</span></li>`);
+  });
   if (!items.length) items.push(`<li><span class="sub">Free day — good for farm work, mining, or fishing.</span></li>`);
   $("detailList").innerHTML = items.join("");
   $("detailList").querySelectorAll("[data-rm]").forEach(b =>
     b.addEventListener("click", () => {
       state.plans = state.plans.filter(p => p.id !== b.dataset.rm);
       savePlans(); renderGrid(); renderDetail(); renderPlanSummary(); renderUpcoming();
+    }));
+  $("detailList").querySelectorAll("[data-rmhire]").forEach(b =>
+    b.addEventListener("click", () => {
+      state.hires = state.hires.filter(h => h.id !== b.dataset.rmhire);
+      saveHires(); refreshHires();
     }));
 
   const noteEl = $("noteInput");
@@ -834,8 +993,9 @@ function setDataStatus(msg) { $("dataStatus").textContent = msg; }
 
 function exportData() {
   const json = JSON.stringify({
-    app: "mineral-town-calendar", version: 2,
+    app: "mineral-town-calendar", version: 3,
     player: state.player, plans: state.plans, notes: state.notes, today: state.today,
+    hires: state.hires,
   }, null, 2);
   const filename = "mineral-town-calendar.json";
   const useClaude = typeof window.claude !== "undefined" && typeof window.claude.use === "function";
@@ -869,22 +1029,29 @@ function importData(file) {
     state.player = validDate(obj.player) ? { season: +obj.player.season, day: +obj.player.day } : null;
     state.today = (obj.today && obj.today.year >= 1 && validDate(obj.today))
       ? { year: +obj.today.year, season: +obj.today.season, day: +obj.today.day } : null;
+    state.hires = (Array.isArray(obj.hires) ? obj.hires : [])
+      .filter(h => h && spriteById(h.sprite).id === h.sprite && jobById(h.job).id === h.job &&
+                   HIRE_DAYS.includes(+h.days) && h.year >= 1 && validDate(h))
+      .map(h => ({
+        id: String(h.id || Math.random()).slice(0, 20), sprite: h.sprite, job: h.job,
+        days: +h.days, year: +h.year, season: +h.season, day: +h.day,
+      }));
     state.notes = {};
     if (obj.notes && typeof obj.notes === "object") {
       for (const [k, v] of Object.entries(obj.notes)) {
         if (/^\d+-[0-3]-\d+$/.test(k) && typeof v === "string" && v.trim()) state.notes[k] = v.slice(0, 500);
       }
     }
-    savePlans(); savePlayer(); saveNotes(); saveToday(); renderAll();
-    const n = state.plans.length, m = Object.keys(state.notes).length;
-    setDataStatus(`Imported ${n} crop plan${n === 1 ? "" : "s"}, ${m} note${m === 1 ? "" : "s"}` +
+    savePlans(); savePlayer(); saveNotes(); saveToday(); saveHires(); renderAll();
+    const n = state.plans.length, m = Object.keys(state.notes).length, k = state.hires.length;
+    setDataStatus(`Imported ${n} crop plan${n === 1 ? "" : "s"}, ${m} note${m === 1 ? "" : "s"}, ${k} sprite contract${k === 1 ? "" : "s"}` +
       (state.player ? `, and your birthday (${SEASONS[state.player.season].name} ${state.player.day}).` : "."));
   }).catch(() => setDataStatus("Couldn't read that file."));
 }
 
 $("resetBtn").addEventListener("click", () => {
-  const n = state.plans.length, m = Object.keys(state.notes).length;
-  $("resetCount").textContent = `${n} crop plan${n === 1 ? "" : "s"}, and ${m} note${m === 1 ? "" : "s"}`;
+  const n = state.plans.length, m = Object.keys(state.notes).length, k = state.hires.length;
+  $("resetCount").textContent = `${n} crop plan${n === 1 ? "" : "s"}, ${k} sprite contract${k === 1 ? "" : "s"}, and ${m} note${m === 1 ? "" : "s"}`;
   $("resetConfirm").hidden = false;
   $("resetBtn").hidden = true;
   setDataStatus("");
@@ -898,10 +1065,11 @@ $("resetYes").addEventListener("click", () => {
   state.player = null;
   state.notes = {};
   state.today = null;
+  state.hires = [];
   state.filters = Object.assign({}, DEFAULT_FILTERS);
   state.selectedDay = null;
   try {
-    ["mtcal-plans", "mtcal-player", "mtcal-notes", "mtcal-today", "mtcal-filters"]
+    ["mtcal-plans", "mtcal-player", "mtcal-notes", "mtcal-today", "mtcal-filters", "mtcal-hires"]
       .forEach(k => localStorage.removeItem(k));
   } catch (e) {}
   $("resetConfirm").hidden = true;
@@ -944,6 +1112,116 @@ function renderPlayerPanel() {
   };
 }
 
+/* ---------- harvest sprites ---------- */
+
+function refreshHires() {
+  renderGrid(); renderDetail(); renderSpritePanel(); renderUpcoming(); renderAlerts();
+}
+
+function renderAlerts() {
+  const box = $("alerts");
+  if (!state.today) { box.innerHTML = ""; return; }
+  const { year, season, day } = state.today;
+  const out = [];
+  endingSoonOn(year, season, day).forEach(h => {
+    const sp = spriteById(h.sprite), job = jobById(h.job);
+    out.push(`<div class="alert">⏰ <strong>${sp.name}</strong>'s ${job.name.toLowerCase()} contract ends
+      <strong>tomorrow</strong> (${fmtAbs(hireEnd(h))}) — hire again today if you still need the help.</div>`);
+  });
+  hiresOn(year, season, day).forEach(({ h, n }) => {
+    if (n !== h.days) return;
+    const sp = spriteById(h.sprite), job = jobById(h.job);
+    out.push(`<div class="alert info">🏁 Today is the last day of <strong>${sp.name}</strong>'s
+      ${job.name.toLowerCase()} contract (${h.days} day${h.days === 1 ? "" : "s"}).</div>`);
+  });
+  box.innerHTML = out.join("");
+}
+
+function renderSpritePanel() {
+  const pick = state.hirePick;
+
+  $("spritePicker").innerHTML = SPRITES.map(s => {
+    const b = BIRTHDAYS.find(x => x[2] === s.name);
+    const title = `Birthday ${SEASONS[b[0]].name} ${b[1]} · likes ${s.grass}`;
+    return `<button class="pick${pick.sprite === s.id ? " on" : ""}" style="--c:${s.color}"
+              data-sp="${s.id}" title="${title}"><span class="dot"></span>${s.name}</button>`;
+  }).join("");
+  $("jobPicker").innerHTML = SPRITE_JOBS.map(j =>
+    `<button class="pick${pick.job === j.id ? " on" : ""}" data-job="${j.id}">${j.icon} ${j.name}</button>`).join("");
+  $("durPicker").innerHTML = HIRE_DAYS.map(d =>
+    `<button class="pick wide${pick.days === d ? " on" : ""}" data-days="${d}">${d} day${d === 1 ? "" : "s"}</button>`).join("");
+
+  $("spritePicker").querySelectorAll("button").forEach(b =>
+    b.addEventListener("click", () => { pick.sprite = b.dataset.sp; renderSpritePanel(); }));
+  $("jobPicker").querySelectorAll("button").forEach(b =>
+    b.addEventListener("click", () => { pick.job = b.dataset.job; renderSpritePanel(); }));
+  $("durPicker").querySelectorAll("button").forEach(b =>
+    b.addEventListener("click", () => { pick.days = +b.dataset.days; renderSpritePanel(); }));
+
+  const sp = spriteById(pick.sprite), job = jobById(pick.job);
+  const btn = $("hireBtn");
+  const day = state.selectedDay;
+  btn.onclick = null;
+  if (!day) {
+    btn.disabled = true;
+    btn.textContent = "🧚 Click a day on the calendar to set the start date";
+  } else {
+    const startAbs = absOf(state.year, state.season, day);
+    const clash = spriteBusy(pick.sprite, startAbs, pick.days);
+    if (clash) {
+      btn.disabled = true;
+      btn.textContent = `${sp.name} is already booked ${fmtAbs(hireStart(clash))} → ${fmtAbs(hireEnd(clash))}`;
+    } else {
+      btn.disabled = false;
+      btn.textContent = `🧚 Hire ${sp.name} · ${fmtAbs(startAbs)} → ${fmtAbs(startAbs + pick.days - 1)}`;
+      btn.onclick = () => {
+        state.hires.push({
+          id: String(Math.random()).slice(2),
+          sprite: pick.sprite, job: pick.job, days: pick.days,
+          year: state.year, season: state.season, day,
+        });
+        saveHires(); refreshHires();
+      };
+    }
+  }
+  $("hireNote").textContent = `${job.sub}. The contract runs ${pick.days} day${pick.days === 1 ? "" : "s"} from the day you pick` +
+    (pick.days > 1 ? ", and you get a reminder the day before it ends." : " — a 1-day contract is over the same day.");
+
+  renderHireList();
+}
+
+function renderHireList() {
+  const box = $("hireList");
+  const hires = state.hires.slice().sort((a, b) => hireStart(a) - hireStart(b));
+  if (!hires.length) {
+    box.innerHTML = `<h3>📋 Contracts</h3><p class="muted">No sprite hired yet. In the GBA game a sprite only works for you once you have befriended it.</p>`;
+    return;
+  }
+  const todayAbs = state.today ? absOf(state.today.year, state.today.season, state.today.day) : null;
+  const rows = hires.map(h => {
+    const sp = spriteById(h.sprite), job = jobById(h.job);
+    const start = hireStart(h), end = hireEnd(h);
+    let st = `${h.days} day${h.days === 1 ? "" : "s"}`, cls = "";
+    if (todayAbs !== null) {
+      if (todayAbs < start) st = `starts in ${start - todayAbs} day${start - todayAbs === 1 ? "" : "s"}`;
+      else if (todayAbs > end) st = "finished";
+      else if (todayAbs === end) { st = `day ${h.days} of ${h.days} — last day`; cls = " warn"; }
+      else if (todayAbs === end - 1) { st = `day ${todayAbs - start + 1} of ${h.days} — ends tomorrow`; cls = " warn"; }
+      else st = `day ${todayAbs - start + 1} of ${h.days}`;
+    }
+    return `<li style="--c:${sp.color}">
+      <strong>${sp.name}</strong> · ${job.icon} ${job.name}
+      <button class="rm" data-rmhire="${h.id}">remove</button><br>
+      <span class="st${cls}">${fmtAbs(start)} → ${fmtAbs(end)} · ${st}</span></li>`;
+  });
+  box.innerHTML = `<h3>📋 Contracts</h3><ul class="hire-list">${rows.join("")}</ul>`;
+  box.querySelectorAll("[data-rmhire]").forEach(b =>
+    b.addEventListener("click", () => {
+      state.hires = state.hires.filter(h => h.id !== b.dataset.rmhire);
+      saveHires(); refreshHires();
+    }));
+}
+
 /* ---------- main ---------- */
 
 function renderAll() {
@@ -955,7 +1233,9 @@ function renderAll() {
   renderUpcoming();
   renderFestList();
   renderPlayerPanel();
+  renderSpritePanel();
   renderDetail();
+  renderAlerts();
   $("yInput").value = state.year;
 }
 
