@@ -167,6 +167,25 @@
   .cell.empty { visibility: hidden; }
   .cell.late { opacity: .4; }
   .cell.late:hover { opacity: .85; }
+  /* crop shading must not hide a festival day — the shops are still closed */
+  .cell.fest.late { opacity: .7; }
+  /* Festival days: every shop and house in town is closed, so mark the whole cell */
+  .cell.fest {
+    border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
+    background:
+      repeating-linear-gradient(135deg, transparent 0 6px,
+        color-mix(in srgb, var(--accent) 10%, transparent) 6px 12px),
+      color-mix(in srgb, var(--accent) 7%, var(--bg));
+    padding-top: 8px;
+  }
+  .cell.fest::before {
+    content: ""; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+    border-radius: 6px 6px 0 0; background: var(--accent);
+  }
+  .cell.fest.selected { background:
+      repeating-linear-gradient(135deg, transparent 0 6px,
+        color-mix(in srgb, var(--accent) 14%, transparent) 6px 12px),
+      var(--accent-soft); }
   .cell.today { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent); }
   .cell.today .num::after {
     content: "TODAY"; margin-left: 5px; font-size: .58rem; font-weight: 700;
@@ -187,6 +206,13 @@
     background: transparent; color: var(--birthday); opacity: .85;
     border: 1px dashed color-mix(in srgb, var(--birthday) 45%, var(--line));
   }
+  .chip.closed {
+    background: color-mix(in srgb, var(--sunday) 15%, var(--surface));
+    color: var(--sunday); font-weight: 700;
+    border: 1px solid color-mix(in srgb, var(--sunday) 38%, transparent);
+    white-space: normal; line-height: 1.2;
+  }
+  .legend .chip.closed { white-space: nowrap; }
   .chip.note { background: var(--surface-2); color: var(--ink-soft); }
 
   /* Sprites are 16x16 pixel art, so keep the hard pixel edges when scaling */
@@ -267,6 +293,11 @@
     font-variant-numeric: tabular-nums;
   }
   .fest-list .v { color: var(--ink-soft); font-size: .76rem; }
+  .fest-list .closed-tag {
+    font-size: .68rem; font-weight: 700; color: var(--sunday);
+    background: color-mix(in srgb, var(--sunday) 13%, transparent);
+    border-radius: 4px; padding: 1px 4px; white-space: nowrap;
+  }
 
   .legend { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: .78rem; color: var(--ink-soft); margin-top: 10px; }
   .legend .chip { font-size: .72rem; }
@@ -291,12 +322,17 @@
 
   /* --- harvest sprite hiring --- */
   .chip.hire { background: color-mix(in srgb, var(--c) 16%, var(--surface)); color: var(--c); font-weight: 600; }
+  .chip.hire.soon {
+    background: transparent; font-weight: 500; opacity: .9;
+    border: 1px dashed color-mix(in srgb, var(--c) 50%, var(--line));
+  }
   .chip.warn {
     background: color-mix(in srgb, var(--sunday) 16%, var(--surface));
     color: var(--sunday); font-weight: 700;
   }
   .detail-list li.hire { border-left-color: var(--c); }
   .detail-list li.warn { border-left-color: var(--sunday); }
+  .detail-list li.closed { border-left-color: var(--sunday); }
 
   .alerts { max-width: 1180px; margin: 0 auto 12px; display: flex; flex-direction: column; gap: 6px; }
   .alert {
@@ -358,6 +394,7 @@
     <div class="legend">
       <span class="chip bd">🎂 Birthday</span>
       <span class="chip fest">🎪 Festival</span>
+      <span class="chip closed">🚫 Shops closed</span>
       <span class="chip gift">🎁 Gift prep</span>
       <span class="chip plant">🌱 Planting</span>
       <span class="chip harvest">🧺 Harvest</span>
@@ -664,8 +701,9 @@ function isToday(year, season, day) {
   return !!state.today && state.today.year === year && state.today.season === season && state.today.day === day;
 }
 
-// A contract runs for `days` days starting on its start date; the last work day is the end date.
-const hireStart = h => absOf(h.year, h.season, h.day);
+// You hire a sprite on the contract date, but it only starts working the next day.
+const hireDay = h => absOf(h.year, h.season, h.day);
+const hireStart = h => hireDay(h) + 1;
 const hireEnd = h => hireStart(h) + h.days - 1;
 const fmtAbs = abs => {
   const d = dateOf(abs);
@@ -679,14 +717,19 @@ function hiresOn(year, season, day) {
     .map(h => ({ h, n: a - hireStart(h) + 1 }))
     .sort((x, y) => hireStart(x.h) - hireStart(y.h));
 }
+// contracts signed on this day — the sprite only starts working the next day
+function hiredOn(year, season, day) {
+  const a = absOf(year, season, day);
+  return state.hires.filter(h => hireDay(h) === a).sort((x, y) => hireStart(x) - hireStart(y));
+}
 // reminder one day before the contract ends (a 1-day contract has no room for it)
 function endingSoonOn(year, season, day) {
   const a = absOf(year, season, day);
   return state.hires.filter(h => h.days > 1 && hireEnd(h) - 1 === a);
 }
 // a sprite can only hold one job at a time
-function spriteBusy(spriteId, startAbs, days) {
-  const endAbs = startAbs + days - 1;
+function spriteBusy(spriteId, hireDayAbs, days) {
+  const startAbs = hireDayAbs + 1, endAbs = startAbs + days - 1;
   return state.hires.find(h => h.sprite === spriteId && startAbs <= hireEnd(h) && endAbs >= hireStart(h));
 }
 
@@ -737,8 +780,11 @@ function renderGrid() {
   for (let day = 1; day <= 30; day++) {
     const w = dow(state.year, state.season, day);
     const chips = [];
-    if (state.filters.festival)
-      festivalsOn(state.season, day).forEach(f => chips.push(`<span class="chip fest">🎪 ${f[2]}</span>`));
+    const fests = festivalsOn(state.season, day);
+    if (state.filters.festival) {
+      fests.forEach(f => chips.push(`<span class="chip fest">🎪 ${f[2]}</span>`));
+      if (fests.length) chips.push(`<span class="chip closed" title="All shops and houses are closed">🚫 Shops closed</span>`);
+    }
     if (isPlayerBirthday(state.season, day)) chips.push(`<span class="chip you">⭐ Your birthday</span>`);
     birthdaysOn(state.season, day).forEach(b => {
       if (state.filters[groupKey(b)]) chips.push(`<span class="chip bd">🎂 ${b[2]}</span>`);
@@ -751,6 +797,10 @@ function renderGrid() {
       if (harvestDays(p).includes(day)) chips.push(`<span class="chip harvest">🧺 ${cropIcon(c)} ${c.name}</span>`);
     });
     if (state.filters.hire) {
+      hiredOn(state.year, state.season, day).forEach(h => {
+        const sp = spriteById(h.sprite), job = jobById(h.job);
+        chips.push(`<span class="chip hire soon" style="--c:${sp.color}">📝 Hire ${sp.name} ${job.icon} starts tomorrow</span>`);
+      });
       hiresOn(state.year, state.season, day).forEach(({ h, n }) => {
         const sp = spriteById(h.sprite), job = jobById(h.job);
         chips.push(`<span class="chip hire" style="--c:${sp.color}">🧚 ${sp.name} ${job.icon} ${n === h.days ? "last day" : n + "/" + h.days}</span>`);
@@ -763,6 +813,7 @@ function renderGrid() {
 
     const cls = ["cell"];
     if (w === 0) cls.push("sun");
+    if (fests.length && state.filters.festival) cls.push("fest");
     if (state.selectedDay === day) cls.push("selected");
     if (isToday(state.year, state.season, day)) cls.push("today");
     else if (shadeLate && day + selCrop.ripe > 30) cls.push("late");
@@ -790,7 +841,9 @@ function renderUpcoming() {
     const mark = off === 0 ? " today-mark" : "";
     const push = text => items.push(`<li><span class="d${mark}">${label}</span><span>${text}</span></li>`);
 
-    festivalsOn(season, day).forEach(f => push(`🎪 <strong>${f[2]}</strong> · ${f[3]}`));
+    const fests = festivalsOn(season, day);
+    fests.forEach(f => push(`🎪 <strong>${f[2]}</strong> · ${f[3]}`));
+    if (fests.length) push(`🚫 <strong>Shops closed</strong> all day — buy seeds beforehand`);
     if (isPlayerBirthday(season, day)) push(`⭐ <strong>Your birthday</strong>`);
     birthdaysOn(season, day).forEach(b => push(`🎂 <strong>${b[2]}</strong>'s birthday`));
     giftRemindersOn(season, day).forEach(b => push(`🎁 Buy a gift for <strong>${b[2]}</strong> (birthday in 2 days)`));
@@ -798,6 +851,10 @@ function renderUpcoming() {
       const c = cropById(p.crop);
       if (p.day === day) push(`🌱 Plant ${cropIcon(c)} <strong>${c.name}</strong>`);
       if (harvestDays(p).includes(day)) push(`🧺 Harvest ${cropIcon(c)} <strong>${c.name}</strong>`);
+    });
+    hiredOn(year, season, day).forEach(h => {
+      const sp = spriteById(h.sprite), job = jobById(h.job);
+      push(`📝 Hire <strong>${sp.name}</strong> for ${job.name.toLowerCase()} — work starts tomorrow (${fmtAbs(hireStart(h))})`);
     });
     hiresOn(year, season, day).forEach(({ h, n }) => {
       const sp = spriteById(h.sprite), job = jobById(h.job);
@@ -819,7 +876,8 @@ function renderFestList() {
   const list = FESTIVALS.filter(f => f[0] === state.season);
   $("festList").innerHTML = list.map(f =>
     `<li><span class="d">${f[1]}</span>
-         <span><strong>${f[2]}</strong> · ${f[3]} · ${f[4]}<br><span class="v">${f[5]}</span></span></li>`).join("");
+         <span><strong>${f[2]}</strong> · ${f[3]} · ${f[4]} <span class="closed-tag">🚫 shops closed</span>
+         <br><span class="v">${f[5]}</span></span></li>`).join("");
 }
 
 function renderCropPanel() {
@@ -906,9 +964,13 @@ function renderDetail() {
   }
 
   const items = [];
-  festivalsOn(state.season, day).forEach(f =>
+  const fests = festivalsOn(state.season, day);
+  fests.forEach(f =>
     items.push(`<li class="fest"><span class="t">🎪 ${f[2]}</span><br>
                 <span class="sub">${f[3]} · ${f[4]} — ${f[5]}</span></li>`));
+  if (fests.length)
+    items.push(`<li class="closed"><span class="t">🚫 All shops and houses are closed</span><br>
+                <span class="sub">No seeds, no tools, no shipping pickup — Zack pays out shipped goods the next day. Buy what you need before today.</span></li>`);
   if (isPlayerBirthday(state.season, day))
     items.push(`<li class="you"><span class="t">⭐ Your birthday</span></li>`);
   birthdaysOn(state.season, day).forEach(b => {
@@ -933,12 +995,17 @@ function renderDetail() {
                   <span class="sub">(planted day ${p.day} · sells ${c.sell}G each)</span></li>`);
     }
   });
+  hiredOn(state.year, state.season, day).forEach(h => {
+    const sp = spriteById(h.sprite), job = jobById(h.job);
+    items.push(`<li class="hire" style="--c:${sp.color}"><span class="t">📝 Hire ${sp.name} — ${job.icon} ${job.name}</span>
+                <button class="rm" data-rmhire="${h.id}">cancel</button><br>
+                <span class="sub">Signed today · ${sp.name} starts work tomorrow (${fmtAbs(hireStart(h))}) and works ${h.days} day${h.days === 1 ? "" : "s"}.</span></li>`);
+  });
   hiresOn(state.year, state.season, day).forEach(({ h, n }) => {
     const sp = spriteById(h.sprite), job = jobById(h.job);
     const range = `${fmtAbs(hireStart(h))} → ${fmtAbs(hireEnd(h))}`;
-    items.push(`<li class="hire" style="--c:${sp.color}"><span class="t">🧚 ${sp.name} — ${job.icon} ${job.name}</span>
-                ${n === 1 ? `<button class="rm" data-rmhire="${h.id}">cancel</button>` : ""}<br>
-                <span class="sub">Day ${n} of ${h.days} · ${range}${n === h.days ? " · last day of the contract" : ""}</span></li>`);
+    items.push(`<li class="hire" style="--c:${sp.color}"><span class="t">🧚 ${sp.name} — ${job.icon} ${job.name}</span><br>
+                <span class="sub">Day ${n} of ${h.days} · hired ${fmtAbs(hireDay(h))} · ${range}${n === h.days ? " · last day of the contract" : ""}</span></li>`);
   });
   endingSoonOn(state.year, state.season, day).forEach(h => {
     const sp = spriteById(h.sprite), job = jobById(h.job);
@@ -1128,6 +1195,11 @@ function renderAlerts() {
     out.push(`<div class="alert">⏰ <strong>${sp.name}</strong>'s ${job.name.toLowerCase()} contract ends
       <strong>tomorrow</strong> (${fmtAbs(hireEnd(h))}) — hire again today if you still need the help.</div>`);
   });
+  hiredOn(year, season, day).forEach(h => {
+    const sp = spriteById(h.sprite), job = jobById(h.job);
+    out.push(`<div class="alert info">📝 <strong>${sp.name}</strong> is hired today for ${job.name.toLowerCase()} —
+      it starts working <strong>tomorrow</strong> (${fmtAbs(hireStart(h))}).</div>`);
+  });
   hiresOn(year, season, day).forEach(({ h, n }) => {
     if (n !== h.days) return;
     const sp = spriteById(h.sprite), job = jobById(h.job);
@@ -1166,14 +1238,15 @@ function renderSpritePanel() {
     btn.disabled = true;
     btn.textContent = "🧚 Click a day on the calendar to set the start date";
   } else {
-    const startAbs = absOf(state.year, state.season, day);
-    const clash = spriteBusy(pick.sprite, startAbs, pick.days);
+    const hireDayAbs = absOf(state.year, state.season, day);
+    const startAbs = hireDayAbs + 1;
+    const clash = spriteBusy(pick.sprite, hireDayAbs, pick.days);
     if (clash) {
       btn.disabled = true;
       btn.textContent = `${sp.name} is already booked ${fmtAbs(hireStart(clash))} → ${fmtAbs(hireEnd(clash))}`;
     } else {
       btn.disabled = false;
-      btn.textContent = `🧚 Hire ${sp.name} · ${fmtAbs(startAbs)} → ${fmtAbs(startAbs + pick.days - 1)}`;
+      btn.textContent = `🧚 Hire ${sp.name} on ${fmtAbs(hireDayAbs)} · works ${fmtAbs(startAbs)} → ${fmtAbs(startAbs + pick.days - 1)}`;
       btn.onclick = () => {
         state.hires.push({
           id: String(Math.random()).slice(2),
@@ -1184,8 +1257,9 @@ function renderSpritePanel() {
       };
     }
   }
-  $("hireNote").textContent = `${job.sub}. The contract runs ${pick.days} day${pick.days === 1 ? "" : "s"} from the day you pick` +
-    (pick.days > 1 ? ", and you get a reminder the day before it ends." : " — a 1-day contract is over the same day.");
+  $("hireNote").textContent = `${job.sub}. You hire on the day you pick, but the sprite does no work that day — ` +
+    `it starts the next morning and works ${pick.days} day${pick.days === 1 ? "" : "s"}` +
+    (pick.days > 1 ? ". You get a reminder the day before the contract ends." : ".");
 
   renderHireList();
 }
@@ -1203,7 +1277,8 @@ function renderHireList() {
     const start = hireStart(h), end = hireEnd(h);
     let st = `${h.days} day${h.days === 1 ? "" : "s"}`, cls = "";
     if (todayAbs !== null) {
-      if (todayAbs < start) st = `starts in ${start - todayAbs} day${start - todayAbs === 1 ? "" : "s"}`;
+      if (todayAbs === hireDay(h)) { st = "hired today — starts tomorrow"; }
+      else if (todayAbs < start) st = `starts in ${start - todayAbs} day${start - todayAbs === 1 ? "" : "s"}`;
       else if (todayAbs > end) st = "finished";
       else if (todayAbs === end) { st = `day ${h.days} of ${h.days} — last day`; cls = " warn"; }
       else if (todayAbs === end - 1) { st = `day ${todayAbs - start + 1} of ${h.days} — ends tomorrow`; cls = " warn"; }
@@ -1212,7 +1287,7 @@ function renderHireList() {
     return `<li style="--c:${sp.color}">
       <strong>${sp.name}</strong> · ${job.icon} ${job.name}
       <button class="rm" data-rmhire="${h.id}">remove</button><br>
-      <span class="st${cls}">${fmtAbs(start)} → ${fmtAbs(end)} · ${st}</span></li>`;
+      <span class="st${cls}">hired ${fmtAbs(hireDay(h))} · works ${fmtAbs(start)} → ${fmtAbs(end)} · ${st}</span></li>`;
   });
   box.innerHTML = `<h3>📋 Contracts</h3><ul class="hire-list">${rows.join("")}</ul>`;
   box.querySelectorAll("[data-rmhire]").forEach(b =>
