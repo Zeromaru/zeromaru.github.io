@@ -656,6 +656,9 @@ const state = {
   hires: loadLS("mtcal-hires", []),
   hirePick: { sprite: SPRITES[0].id, job: SPRITE_JOBS[0].id, days: HIRE_DAYS[1] },
 };
+// open on the saved today marker, so the grid starts on that year and season
+if (state.today) { state.year = state.today.year; state.season = state.today.season; }
+
 const savePlans = () => saveLS("mtcal-plans", state.plans);
 const savePlayer = () => saveLS("mtcal-player", state.player);
 const saveNotes = () => saveLS("mtcal-notes", state.notes);
