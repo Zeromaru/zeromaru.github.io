@@ -1,6 +1,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mineral Town Calendar</title>
+<!-- 16x16 pixel-art calendar: red header + rings, paper body, day dots, one green "today" -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' shape-rendering='crispEdges'%3E%3Crect x='1' y='2' width='14' height='13' fill='%232C2A20'/%3E%3Crect x='2' y='3' width='12' height='11' fill='%23FBFAF3'/%3E%3Crect x='2' y='3' width='12' height='3' fill='%23B3543E'/%3E%3Crect x='4' y='1' width='1' height='3' fill='%232C2A20'/%3E%3Crect x='11' y='1' width='1' height='3' fill='%232C2A20'/%3E%3Crect x='4' y='8' width='1' height='1' fill='%236B6753'/%3E%3Crect x='7' y='8' width='1' height='1' fill='%236B6753'/%3E%3Crect x='10' y='8' width='1' height='1' fill='%236B6753'/%3E%3Crect x='4' y='10' width='1' height='1' fill='%236B6753'/%3E%3Crect x='7' y='10' width='2' height='2' fill='%236FA85C'/%3E%3Crect x='10' y='10' width='1' height='1' fill='%236B6753'/%3E%3Crect x='4' y='12' width='1' height='1' fill='%236B6753'/%3E%3Crect x='10' y='12' width='1' height='1' fill='%236B6753'/%3E%3C/svg%3E">
 <style>
   :root {
     --bg: #F2F1E7;
@@ -166,6 +168,10 @@
   }
   .chip.note { background: var(--surface-2); color: var(--ink-soft); }
 
+  /* Sprites are 16x16 pixel art, so keep the hard pixel edges when scaling */
+  .crop-ico { width: 16px; height: 16px; image-rendering: pixelated; vertical-align: -3px; }
+  .chip .crop-ico { width: 12px; height: 12px; vertical-align: -2px; }
+
   .side { display: flex; flex-direction: column; gap: 14px; }
   .panel {
     background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
@@ -208,6 +214,8 @@
     width: 100%; padding: 8px 10px; border-radius: 7px; border: 1px solid var(--line);
     background: var(--bg); color: var(--ink); font-size: .88rem; font-family: inherit;
   }
+  .crop-row { display: flex; align-items: center; gap: 8px; }
+  .crop-row .crop-ico { width: 24px; height: 24px; flex-shrink: 0; }
   .plant-btn {
     background: var(--plant); color: #fff; border: none; cursor: pointer;
     font-weight: 700; margin-top: 8px;
@@ -260,8 +268,11 @@
   }
   .confirm-box p { margin-bottom: 8px; }
 
-  footer.note { max-width: 1180px; margin: 18px auto 0; color: var(--ink-soft); font-size: .78rem; }
-  footer.note p { margin-top: 4px; }
+  .tips {
+    margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line);
+    color: var(--ink-soft); font-size: .78rem;
+  }
+  .tips p { margin-top: 4px; }
 </style>
 
 <header class="top">
@@ -288,6 +299,10 @@
       <span class="chip harvest">🧺 Harvest</span>
       <span class="chip note">📝 Note</span>
       <span>Click a day for details / planting</span>
+    </div>
+    <div class="tips">
+      <p>💡 Zack skips shipping pickup on festival days — shipped goods pay out the next day · All shops and houses are closed during festivals</p>
+      <p>💡 The Supermarket (seeds) is closed every Tuesday and Sunday, and on festival days — buy seeds ahead</p>
     </div>
   </div>
 
@@ -320,7 +335,10 @@
 
     <section class="panel">
       <h2>🌱 Crop Planner</h2>
-      <select id="cropSelect"></select>
+      <div class="crop-row">
+        <img id="cropPreview" class="crop-ico" alt="" hidden>
+        <select id="cropSelect"></select>
+      </div>
       <dl class="crop-info" id="cropInfo"></dl>
       <label class="replant-row" id="replantRow" hidden>
         <input type="checkbox" id="replantChk">
@@ -356,10 +374,6 @@
   </aside>
 </div>
 
-<footer class="note">
-  <p>💡 Zack skips shipping pickup on festival days — shipped goods pay out the next day · All shops and houses are closed during festivals</p>
-  <p>Data from Usagi's birthday guide (birthdate.txt) and the main guide (guide.txt) · Conflicting guide entries corrected to match the actual game: Popuri = Summer 3, Doctor = Fall 19, Staid = Spring 15</p>
-</footer>
 
 <script>
 "use strict";
@@ -465,6 +479,26 @@ const CROPS = [
   { id: "spinach",     name: "Spinach",      season: 2, ripe: 5,  regrow: 0, cost: 200,  sell: 80,  src: "Supermarket (unlock first)" },
 ];
 const SQUARES_PER_BAG = 9; // one seed bag sows a 3x3 patch
+
+// 16x16 sprites copied from recipes.html, keyed by crop id
+const CROP_IMG = {
+  turnip: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAYYxBKlBCEhDlKpSGllGNrzim1pVpz7yHGvYzn3q3378b//96t/2MAAAAAAACzpX6tAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAHlJREFUGJVVjQsSgzAIRIEsSETuf91CjLVlZgn7+ISIyIDKgNEKFs8EIdOFFxF4ekuE9gzDYeC7X7tVgjutW2SeZalkabd363mzKpuIsAyGjnr31THPOUu6P9EZV0TpIXrG1RGnfjdi+TnoJfHjixx1VF+/0J9t8hQfGOAD1E9MgiAAAAAASUVORK5CYII=",
+  potato: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBKShhaUiFzWhiEayGMeymllCGtnCmllCm9pTHGrSHevTHezjkAAAAAAAAAAAA0rw0rAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGNJREFUGJWNj0kSgDAIBCUsYfv/ewVN1KNUcZiuAYbj+Fk8RYhfqRYRPvmjtdrl8Ud2h90WaGGRmWsIWLxlA13APKNGNsAm6uGmdC0ZRZinm+y75SGsbDSeaAORCn7DA8DPN0/y+ANcrrKzvwAAAABJRU5ErkJggg==",
+  cucumber: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAAAAIOQgIWhgIaxgAlAgQjCEAvQgY1jkY70IAAAAAAAAAAAAAAAAAAAAAAACOpUhXAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAD9JREFUGJVlj0EKADAIw6Rj1f3/w4PtZOzNEFqM+FnRwztEwQY4BFWdKItKYmeVO5Fz1ILIo/ZMBUvanNb78AJ4BwEGKbx92QAAAABJRU5ErkJggg==",
+  strawberry: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBjCAB7EACtCAApewCEQgjnIQA5pQj/KQhrzgjvUhBa7xj/jDH/tYQAAAAAAABKuwqTAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFdJREFUGJWdjUEOwCAIBIVFEdT/f7eQNI311u5tJgtbys/IG901jejN6MuGqsqaSObmU02GKbxxCEIYgZhUgLJCxLW6xwHR8xfBHdsQYzbwPs0Hhzn4Qy4QjAHUsn3m8QAAAABJRU5ErkJggg==",
+  cabbage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBSWjkYYxBCjCGEhDlKlBBKpSFaxghrzinv3qVz7yHWzgD//++t/2PWxpQAAAAL/ukgAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGNJREFUGJWVjQkKRDEMQlMEFSH3v+5P2gvMGLr4slX9orhCzpXnnZhxaF8yf3qONC8XrE+3ewgWaGvTE7qgCK4dqOslWK/AUBUUzMDbQEQFCIfeQTzcpsnjYPV8LcJZvR3/6wNUlQPnFYsVegAAAABJRU5ErkJggg==",
+  tomato: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBzIQBShBjGIQClIQAxUhBSrRAAAAAAAADvQgD/exD/nEr/1r0AAAAAAAAAAAAtWDZnAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFJJREFUGJWdj0kOwCAMAwEbJMv8/711VVA5k9tMrCyl3BYBHgi1ofYr2KNHibs/Rye7vTKURcnTK1Ihh2yhrg1pBzPjE4lESdgckzNw8KtS1189MVQCLoDTGGAAAAAASUVORK5CYII=",
+  corn: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wApAHMAWimthAAxjCExtSnWpQBjxikx3jn/zgBz7zH/92PG5xD/51oAAAAAAACBQnzfAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGxJREFUGJVljUEOxCAMA1Gw04SK/393nQLbQ8MBZmKL1j4T+/b09eDVKJz3zH4MKM47fRlciJw6foRxePGpwCJ8ak1yi0EXjyCshCG61iMWSpC9mJsbCDJerl946quiCEwDbGEPVvZv7M1/5gfP0gLvqN/CIgAAAABJRU5ErkJggg==",
+  onion: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBjMQB7MQClOQDOWgDnYwD/exD/rWsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3c6jKAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFBJREFUGJWNj0EKADEMApuq8f8/3sCSJUsvtSeHjpC1LgP8OyHs2cXkIFSmNQhlpVO9A9rV04gGJbg+NYjaKEXa8TmU5mgEWK+NF1VurzryAMqzAWve6Cr4AAAAAElFTkSuQmCC",
+  pumpkin: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wA5MRAxWhBKUhhKaxhjlCG9hABztSmU3jGtnADn1gj/7xgAAAAAAAAAAAAAAABjdbAAAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGhJREFUGJWNjlEKgDAMQ9cmsZve/762biL+iGEM8niEtvYrJPLhqaIN5L+QC8A+EOLVUfp2HIOcChCd3HZCcwbsASmXQjZBKKXwhBfwmleXQ25zlfTSQW8LwOoULCGJmdPN7l6xd/3MCTJOAgjHXTtyAAAAAElFTkSuQmCC",
+  pineapple: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAMRAAWilzSgAAWikxjCExtSmthAC1YwDWtTH31jn/51r/92MxtSkAAAAAAACmrCXGAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGZJREFUGJVVjQkOxDAIA0HgcDT/f29daZWwTiQYc4n8tORfCyfFWgJxJtfCUoePftJkgHXoZXFXhWeMGbhmdAzLrLp2HceS9L1jBOu9OXWMevjHFovYHdU5lnSww+6ZjIrB32GK8QU1ogLYLUs3HwAAAABJRU5ErkJggg==",
+  eggplant: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBKMWsxKWNKMUJKKXtSMVJSMYRrOVpjOaV7SsaEUsaMY8aUa8ate9bGjPcYECGuA9d8AAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGdJREFUGJVdjlEOwCAIQzFOUobI/W873DKH44PQl1IgImr0q9rqrqu3zVQd3pBAcYFrIgXaoeAMzHqQhVhtmOm5TIfYGGOStWOPRTiFbIDjTg/9AmKITr1Sw4KQKN8rhZmj5f+j7uEC+c0EBTemNhAAAAAASUVORK5CYII=",
+  sweetpotato: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBzADm1AGPvEJT/Qr3OCHsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSiXFLAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAEhJREFUGJVlz0ESACEIA0FJ4P9fNuxlIXLsGrQ45xnApcoINIpici2iMjkjgbaGBJhtP+gVEWeiYCf4Giyp9VET/AiZXxUOPReOsgEAuVErIgAAAABJRU5ErkJggg==",
+  greenpepper: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAGAgQORAhWhgxhClCpTFSxjlj70oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANImNqAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGFJREFUGJVtj9sOwCAIQ7U3//+Ph5mauIz44qEt0NpvybiBBwHx/IGEsbaMVkZYzwuUmqKyTLDlRNgeaLwe7ZDKgOJpW0OKsHw8Y1CLTRnPJtWDLkCiEtjbRXgfxP45cNUDBxoB0IRVzGoAAAAASUVORK5CYII=",
+  carrot: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAKQgAYxhCawgArTkAziEAcyEAAAAIhCm1SgDeawD/jAj/tUr/3oxzKQAAAAD95Ri+AAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGZJREFUGJVVzNsOgDAIA9CC8MBF//9zrbqpWzKSnhQAwO35411JOe0lU2VUkU9EhYYhbmq+Kf43WJCMmOLmzNUZM3Mw753vChDdtddTuc9FZdesYAgp/pK1Vu6tBRAsxSJH5AqkAyde/AL1jAYrIQAAAABJRU5ErkJggg==",
+  spinach: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAIOQgQShAQYxBSShgYcxgYjBghnCFreykxtSFzpTEx1iFK3ilj70oAAAAAAADA0OWmAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAHhJREFUGJVVjlsCwkAIA9NFElPW+19X2mpd+cswPIC7HCjymwQXwRxHKHebUnKL7XTFUtssngJKwaqgL9Bq5qAZ5SEglSrHUAMeAIhwVWfa43Mz05boeX+BXtrSAtB7rKkfAOUpL0Sd/Kdoer6MdWjOfV8B9ucDeAM44QQH+kapIwAAAABJRU5ErkJggg==",
+};
+const cropIcon = c => `<img class="crop-ico" src="${CROP_IMG[c.id]}" alt="">`;
 
 const DEFAULT_FILTERS = { bachelor: true, bachelorette: true, villager: true, sprite: true, festival: true, gifts: false };
 const FILTER_DEFS = [
@@ -589,8 +623,8 @@ function renderGrid() {
       giftRemindersOn(state.season, day).forEach(b => chips.push(`<span class="chip gift">🎁 ${b[2]}</span>`));
     seasonPlans.forEach(p => {
       const c = cropById(p.crop);
-      if (p.day === day) chips.push(`<span class="chip plant">🌱 ${c.name}</span>`);
-      if (harvestDays(p).includes(day)) chips.push(`<span class="chip harvest">🧺 ${c.name}</span>`);
+      if (p.day === day) chips.push(`<span class="chip plant">🌱 ${cropIcon(c)} ${c.name}</span>`);
+      if (harvestDays(p).includes(day)) chips.push(`<span class="chip harvest">🧺 ${cropIcon(c)} ${c.name}</span>`);
     });
     const note = state.notes[noteKey(state.year, state.season, day)];
     if (note) chips.push(`<span class="chip note">📝 ${note.replace(/</g, "&lt;")}</span>`);
@@ -627,8 +661,8 @@ function renderUpcoming() {
     giftRemindersOn(season, day).forEach(b => push(`🎁 Buy a gift for <strong>${b[2]}</strong> (birthday in 2 days)`));
     plansOn(year, season).forEach(p => {
       const c = cropById(p.crop);
-      if (p.day === day) push(`🌱 Plant <strong>${c.name}</strong>`);
-      if (harvestDays(p).includes(day)) push(`🧺 Harvest <strong>${c.name}</strong>`);
+      if (p.day === day) push(`🌱 Plant ${cropIcon(c)} <strong>${c.name}</strong>`);
+      if (harvestDays(p).includes(day)) push(`🧺 Harvest ${cropIcon(c)} <strong>${c.name}</strong>`);
     });
     const note = state.notes[noteKey(year, season, day)];
     if (note) push(`📝 ${note.replace(/</g, "&lt;")}`);
@@ -652,6 +686,7 @@ function renderCropPanel() {
   if (!crops.length) {
     sel.innerHTML = `<option value="">— Nothing grows in Winter —</option>`;
     sel.disabled = true;
+    $("cropPreview").hidden = true;
     $("cropInfo").innerHTML = "";
     $("replantRow").hidden = true;
     $("cropNote").textContent = "Good time for mining, fishing, and making friends in town.";
@@ -668,6 +703,8 @@ function renderCropPanel() {
 function renderCropInfo() {
   const c = cropById($("cropSelect").value);
   if (!c) return;
+  $("cropPreview").src = CROP_IMG[c.id];
+  $("cropPreview").hidden = false;
   const lastPlant = 30 - c.ripe;
   $("cropInfo").innerHTML = `
     <dt>Ripens in</dt><dd>${c.ripe} days</dd>
@@ -693,7 +730,7 @@ function renderPlanSummary() {
     const hs = harvestDays(p).length;
     const rev = hs * SQUARES_PER_BAG * c.sell;
     cost += c.cost; revenue += rev;
-    return `<li><span>${c.name} · day ${p.day} · ${hs}× harvest</span>
+    return `<li><span>${cropIcon(c)} ${c.name} · day ${p.day} · ${hs}× harvest</span>
             <span class="g">−${c.cost}G / +${rev}G</span></li>`;
   });
   const profit = revenue - cost;
@@ -746,11 +783,11 @@ function renderDetail() {
     const c = cropById(p.crop);
     if (p.day === day) {
       const hs = harvestDays(p);
-      items.push(`<li class="plant"><span class="t">🌱 Plant ${c.name}</span>
+      items.push(`<li class="plant"><span class="t">🌱 Plant ${cropIcon(c)} ${c.name}</span>
                   <button class="rm" data-rm="${p.id}">remove</button><br>
                   <span class="sub">${hs.length ? "Harvest on day " + hs.join(", ") : "⚠️ Won't ripen before the season ends"}</span></li>`);
     } else if (harvestDays(p).includes(day)) {
-      items.push(`<li class="harvest"><span class="t">🧺 Harvest ${c.name}</span>
+      items.push(`<li class="harvest"><span class="t">🧺 Harvest ${cropIcon(c)} ${c.name}</span>
                   <span class="sub">(planted day ${p.day} · sells ${c.sell}G each)</span></li>`);
     }
   });
@@ -777,9 +814,9 @@ function renderDetail() {
   btn.hidden = false;
   const late = day + c.ripe > 30;
   const replant = !c.regrow && $("replantChk").checked;
-  btn.textContent = late
-    ? `🌱 Too late for ${c.name} (ripens day ${day + c.ripe})`
-    : `🌱 Plant ${c.name} today (harvest day ${day + c.ripe})${replant ? " + replant" : ""}`;
+  btn.innerHTML = late
+    ? `🌱 Too late for ${cropIcon(c)} ${c.name} (ripens day ${day + c.ripe})`
+    : `🌱 Plant ${cropIcon(c)} ${c.name} today (harvest day ${day + c.ripe})${replant ? " + replant" : ""}`;
   btn.disabled = late;
   btn.onclick = () => {
     let d = day;
