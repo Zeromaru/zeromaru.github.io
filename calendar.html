@@ -126,7 +126,6 @@
     background: var(--surface-2); color: var(--ink-soft);
     font-size: 1.05rem; text-align: center; letter-spacing: .04em;
   }
-  .season-tab .sub { font-size: .72rem; opacity: .75; display: block; letter-spacing: .02em; }
   .season-tab.active {
     background: var(--surface); color: var(--ink);
     border-bottom-color: var(--accent); font-weight: 700;
@@ -167,9 +166,9 @@
   .cell.empty { visibility: hidden; }
   .cell.late { opacity: .4; }
   .cell.late:hover { opacity: .85; }
-  /* crop shading must not hide a festival day — the shops are still closed */
+  /* crop shading must not hide a festival day */
   .cell.fest.late { opacity: .7; }
-  /* Festival days: every shop and house in town is closed, so mark the whole cell */
+  /* Festival days: mark the whole cell */
   .cell.fest {
     border-color: color-mix(in srgb, var(--accent) 60%, var(--line));
     background:
@@ -403,7 +402,7 @@
       <span>Click a day for details / planting</span>
     </div>
     <div class="tips">
-      <p>💡 Zack skips shipping pickup on festival days — shipped goods pay out the next day · All shops and houses are closed during festivals</p>
+      <p>💡 Zack skips shipping pickup on festival days — shipped goods pay out the next day · All shops and houses are closed on most festival days</p>
       <p>💡 The Supermarket (seeds) is closed every Tuesday and Sunday, and on festival days — buy seeds ahead</p>
     </div>
   </div>
@@ -491,10 +490,10 @@
 "use strict";
 
 const SEASONS = [
-  { key: "spring", name: "Spring", sub: "Month 1", color: "var(--spring)" },
-  { key: "summer", name: "Summer", sub: "Month 2", color: "var(--summer)" },
-  { key: "autumn", name: "Autumn", sub: "Month 3", color: "var(--autumn)" },
-  { key: "winter", name: "Winter", sub: "Month 4", color: "var(--winter)" },
+  { key: "spring", name: "Spring", color: "var(--spring)" },
+  { key: "summer", name: "Summer", color: "var(--summer)" },
+  { key: "autumn", name: "Autumn", color: "var(--autumn)" },
+  { key: "winter", name: "Winter", color: "var(--winter)" },
 ];
 const DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const DOW_FULL = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -550,10 +549,10 @@ const GROUP_LABEL = {
 // "special" (Goddess, Gourmet) shares the sprite filter toggle
 const groupKey = b => b[3] === "special" ? "sprite" : b[3];
 
-// [season, day, name, time, venue, note]
+// [season, day, name, time, venue, note, shopsOpen] — shopsOpen: the shops keep their normal hours
 const FESTIVALS = [
   [0, 1,  "New Year's", "6PM–12AM", "Rose Square", "Free rice cakes"],
-  [0, 14, "Spring Thanksgiving", "All day", "Your farm", "Boys who like you bring you chocolate"],
+  [0, 14, "Spring Thanksgiving", "All day", "Your farm", "Boys who like you bring you chocolate", true],
   [0, 18, "Spring Horse Race", "10AM–6PM", "Rose Square", "Horse races + betting for prizes"],
   [0, 22, "Cooking Festival", "10AM–6PM", "Rose Square", "Cooking contest (judged by the Gourmet)"],
   [1, 1,  "Beach Day", "10AM–6PM", "Mineral Beach", "Dog frisbee contest"],
@@ -562,14 +561,14 @@ const FESTIVALS = [
   [1, 24, "Fireworks Festival", "6PM–9PM", "Mineral Beach", "Watch fireworks with the boy you like"],
   [2, 3,  "Music Festival", "6PM–12AM", "Church", "Sing and play music"],
   [2, 9,  "Harvest Festival", "10AM–6PM", "Rose Square", "Communal hot pot — never add chocolate, poisonous mushroom, or red grass"],
-  [2, 13, "Moon Festival", "6PM–12AM", "Peak of Mother's Hill", "The boy who loves you most waits to watch the moon with you"],
+  [2, 13, "Moon Festival", "6PM–12AM", "Peak of Mother's Hill", "The boy who loves you most waits to watch the moon with you", true],
   [2, 18, "Fall Horse Race", "10AM–6PM", "Rose Square", "Horse races + betting for prizes"],
   [2, 21, "Sheep Festival", "10AM–6PM", "Rose Square", "Sheep judging — winner gives higher-grade wool"],
-  [2, 30, "Pumpkin Festival", "All day", "Your farm", "Kids come trick-or-treating — have sweets ready"],
-  [3, 14, "Winter Thanksgiving", "All day", "Around town", "You give chocolate to the boy you like"],
-  [3, 24, "Starry Night", "6PM–9PM", "Depends on invite", "Starry-night dinner with a boy / your husband"],
+  [2, 30, "Pumpkin Festival", "All day", "Your farm", "Kids come trick-or-treating — have sweets ready", true],
+  [3, 14, "Winter Thanksgiving", "All day", "Around town", "You give chocolate to the boy you like", true],
+  [3, 24, "Starry Night", "6PM–9PM", "Depends on invite", "Starry-night dinner with a boy / your husband", true],
   [3, 25, "Stocking Festival", "Night of the 25th", "Your farm", "Own a sock and sleep between 9PM–12AM to get presents"],
-  [3, 30, "New Year's Eve", "6PM–12AM", "Rose Square", "Free noodles · at midnight watch the first sunrise on the peak"],
+  [3, 30, "New Year's Eve", "6PM–12AM", "Rose Square", "Free noodles · at midnight watch the first sunrise on the peak", true],
 ];
 
 // ripe = days until first harvest (plant day d, harvest d+ripe), regrow = harvest again every N days (0 = once)
@@ -694,6 +693,7 @@ function effectiveDay(b) {
 }
 function birthdaysOn(season, day) { return BIRTHDAYS.filter(b => b[0] === season && effectiveDay(b) === day); }
 function festivalsOn(season, day) { return FESTIVALS.filter(f => f[0] === season && f[1] === day); }
+function closesShops(fests) { return fests.some(f => !f[6]); }
 function plansOn(year, season) { return state.plans.filter(p => p.year === year && p.season === season); }
 function isPlayerBirthday(season, day) { return !!state.player && state.player.season === season && state.player.day === day; }
 // Buy a birthday gift 2 days ahead (guide's advice); reminders that fall before day 1 are skipped
@@ -747,7 +747,7 @@ function setAccent() {
 function renderTabs() {
   $("tabs").innerHTML = SEASONS.map((s, i) =>
     `<button class="season-tab${i === state.season ? " active" : ""}" data-s="${i}">
-       ${s.name}<span class="sub">${s.sub}</span></button>`).join("");
+       ${s.name}</button>`).join("");
   $("tabs").querySelectorAll("button").forEach(b =>
     b.addEventListener("click", () => { state.season = +b.dataset.s; state.selectedDay = null; renderAll(); }));
 }
@@ -786,7 +786,7 @@ function renderGrid() {
     const fests = festivalsOn(state.season, day);
     if (state.filters.festival) {
       fests.forEach(f => chips.push(`<span class="chip fest">🎪 ${f[2]}</span>`));
-      if (fests.length) chips.push(`<span class="chip closed" title="All shops and houses are closed">🚫 Shops closed</span>`);
+      if (closesShops(fests)) chips.push(`<span class="chip closed" title="All shops and houses are closed">🚫 Shops closed</span>`);
     }
     if (isPlayerBirthday(state.season, day)) chips.push(`<span class="chip you">⭐ Your birthday</span>`);
     birthdaysOn(state.season, day).forEach(b => {
@@ -846,7 +846,7 @@ function renderUpcoming() {
 
     const fests = festivalsOn(season, day);
     fests.forEach(f => push(`🎪 <strong>${f[2]}</strong> · ${f[3]}`));
-    if (fests.length) push(`🚫 <strong>Shops closed</strong> all day — buy seeds beforehand`);
+    if (closesShops(fests)) push(`🚫 <strong>Shops closed</strong> all day — buy seeds beforehand`);
     if (isPlayerBirthday(season, day)) push(`⭐ <strong>Your birthday</strong>`);
     birthdaysOn(season, day).forEach(b => push(`🎂 <strong>${b[2]}</strong>'s birthday`));
     giftRemindersOn(season, day).forEach(b => push(`🎁 Buy a gift for <strong>${b[2]}</strong> (birthday in 2 days)`));
@@ -879,7 +879,7 @@ function renderFestList() {
   const list = FESTIVALS.filter(f => f[0] === state.season);
   $("festList").innerHTML = list.map(f =>
     `<li><span class="d">${f[1]}</span>
-         <span><strong>${f[2]}</strong> · ${f[3]} · ${f[4]} <span class="closed-tag">🚫 shops closed</span>
+         <span><strong>${f[2]}</strong> · ${f[3]} · ${f[4]} ${f[6] ? "" : `<span class="closed-tag">🚫 shops closed</span>`}
          <br><span class="v">${f[5]}</span></span></li>`).join("");
 }
 
@@ -971,7 +971,7 @@ function renderDetail() {
   fests.forEach(f =>
     items.push(`<li class="fest"><span class="t">🎪 ${f[2]}</span><br>
                 <span class="sub">${f[3]} · ${f[4]} — ${f[5]}</span></li>`));
-  if (fests.length)
+  if (closesShops(fests))
     items.push(`<li class="closed"><span class="t">🚫 All shops and houses are closed</span><br>
                 <span class="sub">No seeds, no tools, no shipping pickup — Zack pays out shipped goods the next day. Buy what you need before today.</span></li>`);
   if (isPlayerBirthday(state.season, day))
