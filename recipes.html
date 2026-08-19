@@ -77,6 +77,18 @@
     font-size:15px;
     line-height:1.7;
   }
+  /* the numbers are hand-collected, so the hero carries a reminder about them */
+  .hero p.hero-note{
+    max-width:560px;
+    margin:14px auto 0;
+    padding:8px 14px;
+    border:1px dashed rgba(233,213,168,.5);
+    border-radius:9px;
+    background:rgba(0,0,0,.12);
+    color:#CBD8C1;
+    font-size:12.5px;
+    line-height:1.6;
+  }
   .hero-stats{
     display:flex; gap:28px; justify-content:center; margin-top:22px; flex-wrap:wrap;
   }
@@ -120,7 +132,7 @@
   }
   .fb-name { flex:1 1 145px; min-width:0; max-width:230px; }
   .fb-ing  { flex:1 1 210px; min-width:0; max-width:280px; }
-  .fb-equip{ flex:6 1 300px; min-width:0; }
+  .fb-utensil{ flex:6 1 300px; min-width:0; }
   /* Max-Power Mode and Sort By stack in one column */
   .fb-stack{ flex:1 1 190px; min-width:0; max-width:250px; display:flex; flex-direction:column; gap:9px; }
   .fav-chip{margin-top:7px;}
@@ -133,7 +145,7 @@
   .filterbar select.sort-select{padding:8px 10px; font-size:13px;}
   .filterbar .chiprow{gap:6px;}
   .filterbar .chip{padding:4px 8px; font-size:11.5px;}
-  /* the no-equipment toggle sits in the same row as the equipment chips */
+  /* the no-utensil toggle sits in the same row as the utensil chips */
   .filterbar .toggle-chip{width:auto; padding:4px 9px; font-size:11.5px; border-radius:20px; line-height:1.25;}
   .filterbar .selected-ing{margin-top:7px;}
   .filterbar .switch-row{margin-top:7px;}
@@ -246,7 +258,6 @@
   .ing-pill button:hover{background:rgba(255,255,255,.4);}
 
   .switch-row{display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--ink-soft); margin-top:8px; cursor:pointer;}
-  .switch-row.dim{opacity:.45; pointer-events:none;}
 
   /* ingredient filter mode: "uses all selected" vs "what can I cook" */
   .ing-mode{display:flex; margin-top:7px; border:1.5px solid var(--line); border-radius:9px; overflow:hidden; width:100%;}
@@ -263,6 +274,9 @@
   .cook-badge.ok{background:#E7F0E2; color:var(--green-dark); font-weight:700;}
   .cook-badge.miss{background:#FBF1DC; color:#8A5C13;}
   .cook-badge.miss b{font-weight:700;}
+  /* pantry items the dish can take as a bonus ingredient */
+  .cook-badge.bonus{background:var(--paper-dim); color:var(--ink-soft); border:1px dashed var(--line); font-size:12px;}
+  .cook-badge.bonus b{font-weight:700; color:var(--ink);}
 
   /* favorite star on a card */
   .fav-btn{
@@ -330,7 +344,7 @@
   .badge.rp{background:#E7F0E2; color:var(--green-dark);}
 
   .row-label{font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-soft); font-weight:700; margin:10px 0 5px;}
-  .equip-line{display:flex; flex-wrap:wrap; gap:5px;}
+  .utensil-line{display:flex; flex-wrap:wrap; gap:5px;}
   .tag{
     font-size:12px; padding:4px 9px; border-radius:12px; border:1px solid var(--line); background:var(--paper-dim); color:var(--ink);
   }
@@ -369,14 +383,22 @@
   }
   .optbox-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
   .optbox-title{font-size:12px; font-weight:700; color:#8A5C13; text-transform:uppercase; letter-spacing:.03em; display:flex; align-items:center; gap:5px;}
-  .optbox-slots{font-size:11px; color:var(--ink-soft);}
-  .optbox-items{display:flex; flex-wrap:wrap; gap:6px; margin-bottom:9px;}
+  /* the box holds two groups: bonus utensils first, then bonus ingredients */
+  .optbox-grp{margin-bottom:9px;}
+  .optbox-grp-title{
+    font-size:11px; font-weight:700; color:#8A5C13; text-transform:uppercase; letter-spacing:.03em;
+    display:flex; align-items:center; gap:6px; margin-bottom:5px;
+  }
+  .optbox-grp-note{font-weight:400; text-transform:none; letter-spacing:0; color:var(--ink-soft);}
+  .optbox-items{display:flex; flex-wrap:wrap; gap:6px;}
   .optbox-item{
     font-size:12px; background:#fff; border:1px solid var(--gold-soft); color:var(--ink);
     padding:4px 9px; border-radius:8px; display:flex; align-items:center; gap:5px;
   }
   .optbox-item b{color:#8A5C13;}
-  /* slots filled with stamina after fatigue hit its cap */
+  /* bonus utensils cost no slot, so they are marked apart from the ingredients */
+  .optbox-item.uten{border-style:dashed;}
+  /* slots filled with stamina once no ingredient can add fatigue any more */
   .optbox-item.filler{border-color:var(--green-line); background:#F5F9F0;}
   .optbox-item.filler b{color:var(--green-dark);}
   .optbox-note{font-size:11.5px; color:var(--ink-soft); margin:-2px 0 8px;}
@@ -443,7 +465,8 @@
 <div class="hero">
   <div class="hero-eyebrow">Harvest Moon GBA · (More) Friends of Mineral Town</div>
   <h1>Recipes Book</h1>
-  <p>Browse every recipe in the game — search by dish name, main equipment, or main ingredient, then see which bonus ingredients boost it most in one click.</p>
+  <p>Browse every recipe in the game — search by dish name, main utensil, or main ingredient, then see which bonus utensils and ingredients boost it most in one click.</p>
+  <p class="hero-note">&#9888;&#65039; This recipe book may contain mistakes — some stat bonus listed here can differ from the real game. Treat the numbers as a guide, not as exact values.</p>
   <div class="hero-stats" id="heroStats"></div>
   <div class="torn"></div>
 </div>
@@ -474,26 +497,26 @@
         <button class="ing-mode-btn" data-mode="cook" title="Treat the selection as your pantry: show dishes you can cook now, plus dishes missing up to 2 ingredients">What can I cook?</button>
       </div>
       <div class="selected-ing" id="selectedIng"></div>
-      <label class="switch-row">
+      <label class="switch-row" title="Off: match your items against main ingredients only. On: a dish also counts when your items can go in as bonus ingredients.">
         <input type="checkbox" id="includeOptional">
         Also search bonus ingredients
       </label>
     </div>
 
-    <div class="field fb-equip">
+    <div class="field fb-utensil">
       <div class="field-label">
-        Main Equipment Used
-        <span class="clear-link" id="clearEquip">Clear</span>
+        Main Utensils Used
+        <span class="clear-link" id="clearUtensil">Clear</span>
       </div>
-      <div class="chiprow" id="equipChips">
-        <button class="toggle-chip" id="noEquipToggle" title="Only show dishes that need no main equipment">&#128683; No equipment needed</button>
+      <div class="chiprow" id="utensilChips">
+        <button class="toggle-chip" id="noUtensilToggle" title="Only show dishes that need no main utensil">&#128683; No utensils needed</button>
       </div>
     </div>
 
     <div class="fb-stack">
       <div class="field">
         <div class="field-label">Max-Power Mode &#128293;</div>
-        <select class="sort-select" id="optModeSelect" title="Works out what to fill the remaining ingredient slots with (out of 8 total) for the biggest boost — shown on each card.">
+        <select class="sort-select" id="optModeSelect" title="Works out which bonus utensils to add (they need no slot) and what to fill the remaining ingredient slots with (out of 8 total) for the biggest boost — shown on each card.">
           <option value="hp" selected>Prioritize Stamina (default)</option>
           <option value="rp">Prioritize Fatigue</option>
           <option value="combined">Combined Stamina + Fatigue</option>
@@ -539,7 +562,7 @@
   "name": "Mayonnaise (S)",
   "hp": 1,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Whisk",
    "Vinegar"
   ],
@@ -552,13 +575,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Mayonnaise (M)",
   "hp": 2,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Whisk",
    "Vinegar"
   ],
@@ -578,13 +601,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Mayonnaise (L)",
   "hp": 3,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Whisk",
    "Vinegar"
   ],
@@ -610,13 +633,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Mayonnaise (G)",
   "hp": 4,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Whisk",
    "Vinegar"
   ],
@@ -648,13 +671,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Mayonnaise (P)",
   "hp": 5,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Whisk",
    "Vinegar"
   ],
@@ -692,13 +715,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Mayonnaise (X)",
   "hp": 6,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Whisk",
    "Vinegar"
   ],
@@ -742,13 +765,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Mayonnaise (X)",
   "hp": 6,
   "rp": 3,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Mayonnaise (S)"
@@ -798,13 +821,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "X Egg",
   "hp": 6,
   "rp": 4,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Regular Quality Egg"
@@ -823,13 +846,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Milk (X)",
   "hp": 7,
   "rp": 5,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Milk (S)"
@@ -848,13 +871,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Cheese (X)",
   "hp": 10,
   "rp": 4,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Cheese (S)"
@@ -873,13 +896,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Wild Grape Wine",
   "hp": 1,
   "rp": 40,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -894,13 +917,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Pickles",
   "hp": 20,
   "rp": 7,
-  "mainEquipment": [
+  "mainUtensils": [
    "Salt"
   ],
   "mainIngredients": [
@@ -909,7 +932,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 3,
@@ -928,7 +951,7 @@
   "name": "Salad",
   "hp": 20,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Knife"
   ],
   "mainIngredients": [
@@ -1151,7 +1174,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Salt",
     "hp": 5,
@@ -1176,7 +1199,7 @@
   "name": "Curry Rice",
   "hp": 30,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -1525,7 +1548,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 3,
@@ -1562,7 +1585,7 @@
   "name": "Stew",
   "hp": 30,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot",
    "Salt"
   ],
@@ -1912,7 +1935,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 8,
@@ -1943,7 +1966,7 @@
   "name": "Miso Soup",
   "hp": 5,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot",
    "Miso"
   ],
@@ -2124,7 +2147,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 8,
@@ -2161,7 +2184,7 @@
   "name": "Stir Fry",
   "hp": 40,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan",
    "Knife",
    "Soy Sauce"
@@ -2284,7 +2307,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Salt",
     "hp": 7,
@@ -2309,7 +2332,7 @@
   "name": "Fried Rice",
   "hp": 40,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -2553,7 +2576,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 3,
@@ -2584,7 +2607,7 @@
   "name": "Savory Pancake",
   "hp": 50,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan",
    "Knife"
   ],
@@ -2886,7 +2909,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Salt",
     "hp": 3,
@@ -2905,7 +2928,7 @@
   "name": "Sandwich",
   "hp": 40,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Knife"
   ],
   "mainIngredients": [
@@ -3166,7 +3189,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 5,
@@ -3185,7 +3208,7 @@
   "name": "Fruit Juice",
   "hp": 20,
   "rp": 15,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -3259,7 +3282,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -3290,7 +3313,7 @@
   "name": "Fruit Latte",
   "hp": 30,
   "rp": 15,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -3411,7 +3434,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -3442,7 +3465,7 @@
   "name": "Vegetable Juice",
   "hp": 20,
   "rp": 20,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -3550,7 +3573,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -3581,7 +3604,7 @@
   "name": "Vegetable Latte",
   "hp": 30,
   "rp": 20,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -3735,7 +3758,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -3766,7 +3789,7 @@
   "name": "Mixed Juice",
   "hp": 50,
   "rp": 30,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -3949,7 +3972,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -3980,7 +4003,7 @@
   "name": "Mixed Juice",
   "hp": 50,
   "rp": 30,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -4155,7 +4178,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -4186,7 +4209,7 @@
   "name": "Mixed Latte",
   "hp": 60,
   "rp": 20,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -4420,7 +4443,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -4451,7 +4474,7 @@
   "name": "Mixed Latte",
   "hp": 60,
   "rp": 20,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -4674,7 +4697,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -4705,7 +4728,7 @@
   "name": "Mixed Latte",
   "hp": 60,
   "rp": 20,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -4931,7 +4954,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -4962,7 +4985,7 @@
   "name": "Pickled Turnip",
   "hp": 20,
   "rp": 4,
-  "mainEquipment": [
+  "mainUtensils": [
    "Knife",
    "Vinegar"
   ],
@@ -4972,7 +4995,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 2,
@@ -4997,7 +5020,7 @@
   "name": "French Fries",
   "hp": 30,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan",
    "Knife"
   ],
@@ -5017,7 +5040,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -5036,7 +5059,7 @@
   "name": "Strawberry Jam",
   "hp": 5,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot",
    "Sugar"
   ],
@@ -5059,7 +5082,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -5078,7 +5101,7 @@
   "name": "Strawberry Milk",
   "hp": 30,
   "rp": 15,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -5133,7 +5156,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 3,
@@ -5152,7 +5175,7 @@
   "name": "Tomato Juice",
   "hp": 20,
   "rp": 20,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -5161,7 +5184,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 0,
@@ -5180,7 +5203,7 @@
   "name": "Ketchup",
   "hp": 1,
   "rp": 0,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer",
    "Sugar",
    "Vinegar",
@@ -5195,13 +5218,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Popcorn",
   "hp": 30,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -5217,7 +5240,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -5236,7 +5259,7 @@
   "name": "Corn Flakes",
   "hp": 10,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Rolling Pin",
    "Oven"
   ],
@@ -5331,7 +5354,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 3,
@@ -5344,7 +5367,7 @@
   "name": "Baked Corn",
   "hp": 7,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven"
   ],
   "mainIngredients": [
@@ -5366,7 +5389,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 2,
@@ -5391,7 +5414,7 @@
   "name": "Pineapple Juice",
   "hp": 5,
   "rp": 15,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -5407,7 +5430,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -5438,7 +5461,7 @@
   "name": "Pumpkin Pudding",
   "hp": 50,
   "rp": 10,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Pot",
    "Sugar"
@@ -5540,7 +5563,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 2,
@@ -5553,7 +5576,7 @@
   "name": "Pumpkin Stew",
   "hp": 8,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot",
    "Sugar",
    "Soy Sauce"
@@ -5583,7 +5606,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 2,
@@ -5608,7 +5631,7 @@
   "name": "Happy Eggplant",
   "hp": 30,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan",
    "Sugar",
    "Miso",
@@ -5620,7 +5643,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 2,
@@ -5633,7 +5656,7 @@
   "name": "Sweet Potatoes",
   "hp": 40,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Pot",
    "Sugar"
@@ -5687,13 +5710,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Baked Sweet Potato",
   "hp": 40,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven"
   ],
   "mainIngredients": [
@@ -5715,7 +5738,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -5734,7 +5757,7 @@
   "name": "Greens",
   "hp": 20,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot",
    "Soy Sauce"
   ],
@@ -5751,7 +5774,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 2,
@@ -5770,7 +5793,7 @@
   "name": "Scrambled Eggs",
   "hp": 40,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -5861,7 +5884,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Whisk",
     "hp": 3,
@@ -5892,7 +5915,7 @@
   "name": "Omelet",
   "hp": 50,
   "rp": 4,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -6154,7 +6177,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 2,
@@ -6191,7 +6214,7 @@
   "name": "Omelet Rice",
   "hp": 60,
   "rp": 4,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -6456,7 +6479,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 2,
@@ -6493,7 +6516,7 @@
   "name": "Boiled Egg",
   "hp": 20,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -6575,7 +6598,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Salt",
     "hp": 3,
@@ -6588,7 +6611,7 @@
   "name": "Pudding",
   "hp": 30,
   "rp": 8,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Pot",
    "Sugar"
@@ -6765,7 +6788,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 2,
@@ -6778,7 +6801,7 @@
   "name": "Hot Milk",
   "hp": 20,
   "rp": 10,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -6824,7 +6847,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 4,
@@ -6837,7 +6860,7 @@
   "name": "Butter",
   "hp": 1,
   "rp": 0,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -6883,7 +6906,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Salt",
     "hp": 1,
@@ -6896,7 +6919,7 @@
   "name": "Cheese Cake",
   "hp": 50,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Whisk",
    "Pot",
@@ -7059,7 +7082,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -7072,7 +7095,7 @@
   "name": "Cheese Fondue",
   "hp": 40,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -7199,7 +7222,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 3,
@@ -7230,7 +7253,7 @@
   "name": "Apple Pie",
   "hp": 50,
   "rp": 8,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Rolling Pin",
    "Pot",
@@ -7340,13 +7363,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Apple Jam",
   "hp": 5,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot",
    "Sugar"
   ],
@@ -7402,7 +7425,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -7421,7 +7444,7 @@
   "name": "Apple Souffle",
   "hp": 8,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -7446,7 +7469,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -7465,7 +7488,7 @@
   "name": "Bamboo Rice",
   "hp": 30,
   "rp": 1,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Bamboo Shoot"
@@ -7475,7 +7498,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 3,
@@ -7506,7 +7529,7 @@
   "name": "Grape Jam",
   "hp": 5,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot",
    "Sugar"
   ],
@@ -7535,7 +7558,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Salt",
     "hp": -1,
@@ -7548,7 +7571,7 @@
   "name": "Grape Juice",
   "hp": 5,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -7564,7 +7587,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -7595,7 +7618,7 @@
   "name": "Mushroom Rice",
   "hp": 30,
   "rp": 1,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Mushroom"
@@ -7605,7 +7628,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 3,
@@ -7636,7 +7659,7 @@
   "name": "Truffle Rice",
   "hp": 60,
   "rp": 1,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Truffle"
@@ -7646,7 +7669,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 3,
@@ -7677,7 +7700,7 @@
   "name": "Sushi",
   "hp": 40,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Vinegar"
   ],
   "mainIngredients": [
@@ -7696,7 +7719,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Soy Sauce",
     "hp": 1,
@@ -7709,7 +7732,7 @@
   "name": "Jam Bun",
   "hp": 40,
   "rp": 5,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Bread"
@@ -7746,7 +7769,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -7765,7 +7788,7 @@
   "name": "Dinner Roll",
   "hp": 40,
   "rp": 2,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Bread"
@@ -7782,13 +7805,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Raisin Bread",
   "hp": 30,
   "rp": 4,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Bread"
@@ -7811,13 +7834,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Curry Bread",
   "hp": 30,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -8163,7 +8186,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 8,
@@ -8200,7 +8223,7 @@
   "name": "Toast",
   "hp": 7,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven"
   ],
   "mainIngredients": [
@@ -8240,7 +8263,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -8259,7 +8282,7 @@
   "name": "French Toast",
   "hp": 30,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -8359,7 +8382,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Whisk",
     "hp": 1,
@@ -8378,7 +8401,7 @@
   "name": "Sashimi",
   "hp": 30,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Knife"
   ],
   "mainIngredients": [
@@ -8401,7 +8424,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Soy Sauce",
     "hp": 3,
@@ -8414,7 +8437,7 @@
   "name": "Grilled Fish",
   "hp": 30,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -8430,7 +8453,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Salt",
     "hp": 3,
@@ -8449,7 +8472,7 @@
   "name": "Chirashi Sushi",
   "hp": 50,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Knife",
    "Vinegar"
   ],
@@ -8514,7 +8537,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Soy Sauce",
     "hp": 3,
@@ -8527,7 +8550,7 @@
   "name": "Pizza",
   "hp": 40,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Rolling Pin"
   ],
@@ -8754,7 +8777,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 7,
@@ -8779,7 +8802,7 @@
   "name": "Noodles",
   "hp": 40,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Rolling Pin",
    "Pot",
    "Knife"
@@ -8935,7 +8958,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 3,
@@ -8972,7 +8995,7 @@
   "name": "Curry Noodles",
   "hp": 60,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -9129,7 +9152,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -9166,7 +9189,7 @@
   "name": "Curry Noodles",
   "hp": 60,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Rolling Pin",
    "Pot",
    "Knife"
@@ -9325,7 +9348,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -9362,7 +9385,7 @@
   "name": "Tempura Noodles",
   "hp": 60,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Rolling Pin",
    "Pot",
    "Knife"
@@ -9515,7 +9538,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 3,
@@ -9552,7 +9575,7 @@
   "name": "Tempura Noodles",
   "hp": 60,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -9703,7 +9726,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 3,
@@ -9740,7 +9763,7 @@
   "name": "Fried Noodles (Noodles)",
   "hp": 60,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -9891,7 +9914,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -9928,7 +9951,7 @@
   "name": "Buckwheat Noodles",
   "hp": 40,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Rolling Pin",
    "Pot",
    "Knife"
@@ -10078,7 +10101,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 3,
@@ -10115,7 +10138,7 @@
   "name": "Tempura Buckwheat Noodles",
   "hp": 60,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Rolling Pin",
    "Pot",
    "Knife"
@@ -10268,7 +10291,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 3,
@@ -10305,7 +10328,7 @@
   "name": "Tempura Buckwheat Noodles",
   "hp": 60,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -10456,7 +10479,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 3,
@@ -10493,7 +10516,7 @@
   "name": "Fried Noodles (Buckwheat Noodles)",
   "hp": 60,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -10644,7 +10667,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -10681,7 +10704,7 @@
   "name": "Buckwheat Chips",
   "hp": 15,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -10690,7 +10713,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Whisk",
     "hp": 1,
@@ -10715,7 +10738,7 @@
   "name": "Tempura",
   "hp": 20,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -10911,7 +10934,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Whisk",
     "hp": 1,
@@ -10936,7 +10959,7 @@
   "name": "Mountain Stew",
   "hp": 40,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot",
    "Knife",
    "Sugar",
@@ -11003,13 +11026,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Moon Dumplings",
   "hp": 40,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Sugar"
   ],
   "mainIngredients": [
@@ -11018,13 +11041,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Roasted Rice Cake",
   "hp": 10,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven"
   ],
   "mainIngredients": [
@@ -11046,7 +11069,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 1,
@@ -11083,7 +11106,7 @@
   "name": "Toasted Rice Ball",
   "hp": 5,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven"
   ],
   "mainIngredients": [
@@ -11092,7 +11115,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": -2,
@@ -11123,7 +11146,7 @@
   "name": "Rice Gruel",
   "hp": 5,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot",
    "Salt"
   ],
@@ -11188,13 +11211,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Tempura Rice",
   "hp": 30,
   "rp": 2,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Rice Ball"
@@ -11204,7 +11227,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 2,
@@ -11229,7 +11252,7 @@
   "name": "Egg Over Rice",
   "hp": 20,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -11241,7 +11264,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 2,
@@ -11266,7 +11289,7 @@
   "name": "Candied Potato",
   "hp": 8,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -11278,7 +11301,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Sugar",
     "hp": 2,
@@ -11297,7 +11320,7 @@
   "name": "Potato Pancakes",
   "hp": 20,
   "rp": 2,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan",
    "Knife",
    "Salt"
@@ -11320,7 +11343,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Soy Sauce",
     "hp": 1,
@@ -11333,7 +11356,7 @@
   "name": "Fish Sticks",
   "hp": 5,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer",
    "Salt"
   ],
@@ -11344,13 +11367,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Cookies",
   "hp": 15,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Rolling Pin",
    "Sugar"
@@ -11410,13 +11433,13 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Chocolate Cookies",
   "hp": 30,
   "rp": 5,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Rolling Pin",
    "Sugar"
@@ -11479,7 +11502,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -11492,7 +11515,7 @@
   "name": "Chocolate Cookies",
   "hp": 30,
   "rp": 5,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Chocolate"
@@ -11545,7 +11568,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -11558,7 +11581,7 @@
   "name": "Ice Cream",
   "hp": 30,
   "rp": 20,
-  "mainEquipment": [
+  "mainUtensils": [
    "Whisk",
    "Pot",
    "Sugar"
@@ -11711,7 +11734,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -11724,7 +11747,7 @@
   "name": "Cake",
   "hp": 40,
   "rp": 8,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Whisk",
    "Sugar"
@@ -11856,7 +11879,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -11869,7 +11892,7 @@
   "name": "Chocolate Cake",
   "hp": 70,
   "rp": 8,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Whisk",
    "Sugar"
@@ -12004,7 +12027,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 1,
@@ -12017,7 +12040,7 @@
   "name": "Pancakes",
   "hp": 20,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan"
   ],
   "mainIngredients": [
@@ -12070,7 +12093,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Whisk",
     "hp": 3,
@@ -12089,7 +12112,7 @@
   "name": "Relaxation Tea",
   "hp": 50,
   "rp": 50,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -12243,7 +12266,7 @@
     "recommended": false
    }
   ],
-  "optionalEquipment": [
+  "optionalUtensils": [
    {
     "name": "Knife",
     "hp": 3,
@@ -12262,7 +12285,7 @@
   "name": "SUGDW Apple",
   "hp": 2,
   "rp": 2,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Apple"
@@ -12275,13 +12298,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "HMSGB Apple",
   "hp": 2,
   "rp": 2,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Apple"
@@ -12294,13 +12317,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "AEPFE Apple",
   "hp": 2,
   "rp": 2,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Apple"
@@ -12313,13 +12336,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Bodigizer",
   "hp": 50,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -12337,13 +12360,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Bodigizer XL",
   "hp": 100,
   "rp": 1,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -12355,13 +12378,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Turbojolt",
   "hp": 0,
   "rp": 20,
-  "mainEquipment": [
+  "mainUtensils": [
    "Pot"
   ],
   "mainIngredients": [
@@ -12379,13 +12402,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Turbojolt XL",
   "hp": 0,
   "rp": 50,
-  "mainEquipment": [
+  "mainUtensils": [
    "Mixer"
   ],
   "mainIngredients": [
@@ -12397,13 +12420,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Relaxation Tea Leaves",
   "hp": 2,
   "rp": 3,
-  "mainEquipment": [
+  "mainUtensils": [
    "Frying Pan",
    "Knife"
   ],
@@ -12434,13 +12457,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Elli Leaves",
   "hp": 100,
   "rp": 50,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Pot",
    "Frying Pan",
@@ -12478,13 +12501,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "Elli Leaves",
   "hp": 100,
   "rp": 50,
-  "mainEquipment": [
+  "mainUtensils": [
    "Oven",
    "Pot",
    "Frying Pan",
@@ -12556,13 +12579,13 @@
     "recommended": true
    }
   ],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "The Spring Sun",
   "hp": 0,
   "rp": 0,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Red Magic Flower"
@@ -12584,13 +12607,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "The Summer Sun",
   "hp": 0,
   "rp": 0,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Small Fish"
@@ -12609,13 +12632,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "The Autumn Sun",
   "hp": 0,
   "rp": 0,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "X Egg"
@@ -12637,13 +12660,13 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  },
  {
   "name": "The Winter Sun",
   "hp": 0,
   "rp": 0,
-  "mainEquipment": [],
+  "mainUtensils": [],
   "mainIngredients": [
    [
     "Alexandrite"
@@ -12668,7 +12691,7 @@
    ]
   ],
   "optionalIngredients": [],
-  "optionalEquipment": []
+  "optionalUtensils": []
  }
 ]
 </script>
@@ -13137,31 +13160,31 @@ function itemIcon(name, cls){
 
 
 // ---------- gather unique lists ----------
-const equipSet = new Set();
+const utensilSet = new Set();
 const ingSet = new Set();
 RAW_RECIPES.forEach(r=>{
-  r.mainEquipment.forEach(e=>equipSet.add(e));
+  r.mainUtensils.forEach(e=>utensilSet.add(e));
   r.mainIngredients.forEach(g=>g.forEach(a=>ingSet.add(a)));
-  r.optionalEquipment.forEach(e=>equipSet.add(e.name));
+  r.optionalUtensils.forEach(e=>utensilSet.add(e.name));
   r.optionalIngredients.forEach(i=>ingSet.add(i.name));
 });
-const EQUIP_ORDER = ['Knife','Frying Pan','Pot','Mixer','Whisk','Rolling Pin','Oven',
+const UTENSIL_ORDER = ['Knife','Frying Pan','Pot','Mixer','Whisk','Rolling Pin','Oven',
                      'Sugar','Salt','Vinegar','Soy Sauce','Miso'];
-function cmpEquip(a,b){
-  const ia = EQUIP_ORDER.indexOf(a), ib = EQUIP_ORDER.indexOf(b);
+function cmpUtensil(a,b){
+  const ia = UTENSIL_ORDER.indexOf(a), ib = UTENSIL_ORDER.indexOf(b);
   if(ia<0 && ib<0) return a.localeCompare(b);
   if(ia<0) return 1;
   if(ib<0) return -1;
   return ia-ib;
 }
-const ALL_EQUIP = Array.from(equipSet).sort(cmpEquip);
+const ALL_UTENSILS = Array.from(utensilSet).sort(cmpUtensil);
 const ALL_ING = Array.from(ingSet).sort((a,b)=>a.localeCompare(b));
 
 // ---------- state ----------
 const state = {
   nameQuery:'',
-  equip: new Set(),
-  noEquipOnly:false,
+  utensils: new Set(),
+  noUtensilOnly:false,
   ingredients: new Set(),
   ingMode:'contain',      // 'contain' = dish uses all selected; 'cook' = selection is the pantry
   includeOptionalIng:false,
@@ -13187,30 +13210,30 @@ document.getElementById('heroStats').innerHTML = `
   <div class="hero-stat"><b>${ALL_ING.length}</b><span>Ingredients Found</span></div>
 `;
 
-// ---------- render equipment chips ----------
-const equipChipsEl = document.getElementById('equipChips');
-ALL_EQUIP.forEach(eq=>{
+// ---------- render utensil chips ----------
+const utensilChipsEl = document.getElementById('utensilChips');
+ALL_UTENSILS.forEach(eq=>{
   const isSeason = SEASONINGS.has(eq);
   const chip = document.createElement('div');
   chip.className = 'chip ' + (isSeason?'season':'tool');
   chip.innerHTML = `${itemIcon(eq,'ico-sm') || '<span class="swatch"></span>'}${eq}`;
   chip.addEventListener('click', ()=>{
-    if(state.equip.has(eq)) state.equip.delete(eq); else state.equip.add(eq);
-    if(state.equip.size>0) state.noEquipOnly=false;
+    if(state.utensils.has(eq)) state.utensils.delete(eq); else state.utensils.add(eq);
+    if(state.utensils.size>0) state.noUtensilOnly=false;
     render();
   });
   chip.dataset.eq = eq;
-  equipChipsEl.appendChild(chip);
+  utensilChipsEl.appendChild(chip);
 });
 
-document.getElementById('noEquipToggle').addEventListener('click', (e)=>{
-  state.noEquipOnly = !state.noEquipOnly;
-  if(state.noEquipOnly) state.equip.clear();
+document.getElementById('noUtensilToggle').addEventListener('click', (e)=>{
+  state.noUtensilOnly = !state.noUtensilOnly;
+  if(state.noUtensilOnly) state.utensils.clear();
   render();
 });
 
-document.getElementById('clearEquip').addEventListener('click', ()=>{
-  state.equip.clear(); state.noEquipOnly=false; render();
+document.getElementById('clearUtensil').addEventListener('click', ()=>{
+  state.utensils.clear(); state.noUtensilOnly=false; render();
 });
 
 // ---------- name search ----------
@@ -13292,8 +13315,8 @@ document.getElementById('clearName').addEventListener('click', ()=>{
 // ---------- reset every filter back to the defaults ----------
 document.getElementById('resetAll').addEventListener('click', ()=>{
   state.nameQuery = '';
-  state.equip.clear();
-  state.noEquipOnly = false;
+  state.utensils.clear();
+  state.noUtensilOnly = false;
   state.ingredients.clear();
   state.ingMode = 'contain';
   state.includeOptionalIng = false;
@@ -13313,7 +13336,7 @@ document.getElementById('resetAll').addEventListener('click', ()=>{
 // ---------- click an item name on a card to toggle it in the filters ----------
 // Delegated on the grid because render() rebuilds every card.
 document.getElementById('grid').addEventListener('click', (e)=>{
-  const el = e.target.closest('[data-ing],[data-equip]');
+  const el = e.target.closest('[data-ing],[data-utensil]');
   if(!el) return;
   if(el.dataset.ing !== undefined){
     const name = el.dataset.ing;
@@ -13328,9 +13351,9 @@ document.getElementById('grid').addEventListener('click', (e)=>{
       }
     }
   } else {
-    const name = el.dataset.equip;
-    if(state.equip.has(name)) state.equip.delete(name);
-    else { state.equip.add(name); state.noEquipOnly = false; }
+    const name = el.dataset.utensil;
+    if(state.utensils.has(name)) state.utensils.delete(name);
+    else { state.utensils.add(name); state.noUtensilOnly = false; }
   }
   render();
 });
@@ -13338,65 +13361,87 @@ document.getElementById('grid').addEventListener('click', (e)=>{
 // ---------- optimal-combo calculator ----------
 // Game rule: a recipe can hold at most 8 ingredients total (main + optional).
 // Main ingredient groups always take 1 slot each (you pick exactly one item per group).
-// This works out which of the optional (bonus) ingredients to add in the
-// remaining slots to get the biggest stat payoff, for a chosen optimization target.
+// Bonus utensils sit outside that budget, so they are picked first and every
+// bonus ingredient is then chosen on top of what the utensils already added.
 const TOTAL_SLOTS = 8;
-// Fatigue tops out at 100 in the game, so anything above that is wasted.
+// Fatigue tops out at 100 in the game. A pick that would pass it is skipped and
+// the next item that still fits is used instead.
 const RP_CAP = 100;
 function computeOptimal(recipe, mode){
   const mainSlots = recipe.mainIngredients.length;
   const remaining = Math.max(0, TOTAL_SLOTS - mainSlots);
-  const candidates = recipe.optionalIngredients.map((o, idx)=>({...o, idx}));
 
   const valueOf = (o)=>{
     if(mode==='hp') return o.hp;
     if(mode==='rp') return o.rp;
     return o.hp + o.rp;
   };
-
-  const usable = candidates.filter(o=>valueOf(o) > 0);
-  usable.sort((a,b)=>{
+  const byValue = (a,b)=>{
     const d = valueOf(b) - valueOf(a);
     if(d!==0) return d;
     return (b.hp+b.rp) - (a.hp+a.rp);
-  });
+  };
 
-  let chosen;
-  if(mode==='rp'){
-    // stop as soon as the fatigue cap is reached — more fatigue would be thrown away
-    chosen = [];
-    let rp = recipe.rp;
-    for(const o of usable){
-      if(chosen.length >= remaining || rp >= RP_CAP) break;
-      chosen.push(o);
-      rp += o.rp;
-    }
-    // fatigue is full, so spend the slots that are left on stamina instead
-    if(rp >= RP_CAP && chosen.length < remaining){
-      const taken = new Set(chosen.map(o=>o.idx));
-      candidates
-        .filter(o=>!taken.has(o.idx) && o.hp > 0)
-        .sort((a,b)=> (b.hp - a.hp) || ((b.hp+b.rp) - (a.hp+a.rp)))
-        .slice(0, remaining - chosen.length)
-        .forEach(o=>chosen.push({...o, filler:true}));
-    }
-  } else {
-    chosen = usable.slice(0, remaining);
+  let hp = recipe.hp, rp = recipe.rp;
+  let rpLimited = false;   // true when at least one item was skipped by the fatigue cap
+
+  // 1) bonus utensils first — they cost no ingredient slot, so every one that
+  //    gives something is worth adding whatever the mode is. The mode only sets
+  //    the order, which matters when the fatigue limit leaves room for a few.
+  const chosenUtensils = [];
+  recipe.optionalUtensils
+    .map((o, idx)=>({...o, idx}))
+    // a utensil is only worth adding if it raises a stat and lowers neither:
+    // some of them (Sugar in Stew, Salt in Grape Jam, ...) cost stamina or fatigue
+    .filter(o=>(o.hp > 0 || o.rp > 0) && o.hp >= 0 && o.rp >= 0)
+    .sort(byValue)
+    .forEach(o=>{
+      if(rp + o.rp > RP_CAP){ rpLimited = true; return; }
+      chosenUtensils.push(o);
+      hp += o.hp; rp += o.rp;
+    });
+
+  // 2) bonus ingredients fill the slots that are left, counted on top of the utensils
+  const candidates = recipe.optionalIngredients.map((o, idx)=>({...o, idx}));
+  const chosen = [];
+  for(const o of candidates.filter(o=>valueOf(o) > 0).sort(byValue)){
+    if(chosen.length >= remaining) break;
+    if(rp + o.rp > RP_CAP){ rpLimited = true; continue; }
+    chosen.push(o);
+    hp += o.hp; rp += o.rp;
   }
+
+  // fatigue mode: no ingredient can add fatigue any more, so the slots that are
+  // left go to stamina instead
+  if(mode==='rp' && chosen.length < remaining){
+    const taken = new Set(chosen.map(o=>o.idx));
+    const fillers = candidates
+      .filter(o=>!taken.has(o.idx) && o.hp > 0)
+      .sort((a,b)=> (b.hp - a.hp) || ((b.hp+b.rp) - (a.hp+a.rp)));
+    for(const o of fillers){
+      if(chosen.length >= remaining) break;
+      if(rp + o.rp > RP_CAP){ rpLimited = true; continue; }
+      chosen.push({...o, filler:true});
+      hp += o.hp; rp += o.rp;
+    }
+  }
+
+  const utenHp = chosenUtensils.reduce((s,o)=>s+o.hp,0);
+  const utenRp = chosenUtensils.reduce((s,o)=>s+o.rp,0);
   const sumHp = chosen.reduce((s,o)=>s+o.hp,0);
   const sumRp = chosen.reduce((s,o)=>s+o.rp,0);
 
-  const rawRp = recipe.rp + sumRp;
-  const rpCapped = rawRp > RP_CAP;
-
   return {
     mainSlots, remaining,
+    chosenUtensils,
+    chosenUtensilIdx: new Set(chosenUtensils.map(c=>c.idx)),
     chosen,
     chosenIdx: new Set(chosen.map(c=>c.idx)),
+    utenHp, utenRp,
     sumHp, sumRp,
-    rpCapped,
-    maxHp: recipe.hp + sumHp,
-    maxRp: rpCapped ? RP_CAP : rawRp
+    rpLimited,
+    maxHp: hp,
+    maxRp: rp
   };
 }
 
@@ -13423,6 +13468,11 @@ function cookMissing(r){
   const sel = Array.from(state.ingredients);
   return r.mainIngredients.filter(g => !g.some(a => sel.some(s => ingCovers(s,a))));
 }
+// bonus ingredients of the dish the pantry can supply
+function cookBonusMatches(r){
+  const sel = Array.from(state.ingredients);
+  return r.optionalIngredients.filter(o => sel.some(s => ingCovers(s, o.name)));
+}
 // dishes missing more than this many ingredients are hidden in cook mode
 const COOK_MISS_MAX = 2;
 
@@ -13431,12 +13481,12 @@ function recipeMatches(r){
 
   if(state.favsOnly && !favorites.has(r.name)) return false;
 
-  if(state.noEquipOnly && r.mainEquipment.length>0) return false;
+  if(state.noUtensilOnly && r.mainUtensils.length>0) return false;
 
-  if(state.equip.size>0){
-    // picking several pieces of equipment narrows the list: a dish must use all of them
-    const used = new Set(r.mainEquipment);
-    const hasAll = Array.from(state.equip).every(e=>used.has(e));
+  if(state.utensils.size>0){
+    // picking several utensils narrows the list: a dish must use all of them
+    const used = new Set(r.mainUtensils);
+    const hasAll = Array.from(state.utensils).every(e=>used.has(e));
     if(!hasAll) return false;
   }
 
@@ -13445,8 +13495,12 @@ function recipeMatches(r){
       const groups = r.mainIngredients.length;
       const missing = cookMissing(r).length;
       if(missing > COOK_MISS_MAX) return false;
-      // the pantry has to fill at least one slot, or the list floods with unrelated short recipes
-      if(groups > 0 && missing === groups) return false;
+      // the pantry has to give the dish something, or the list floods with unrelated
+      // short recipes. With the bonus switch off that means filling a main slot;
+      // with it on, supplying a bonus ingredient counts too.
+      const fillsMain = missing < groups;
+      const fillsBonus = state.includeOptionalIng && cookBonusMatches(r).length > 0;
+      if(groups > 0 && !fillsMain && !fillsBonus) return false;
     } else {
       const mainNames = new Set();
       r.mainIngredients.forEach(g=>g.forEach(a=>mainNames.add(a)));
@@ -13455,7 +13509,7 @@ function recipeMatches(r){
         pool = new Set(mainNames);
         r.optionalIngredients.forEach(i=>pool.add(i.name));
       }
-      // same rule as equipment: every picked ingredient has to be in the dish
+      // same rule as utensils: every picked ingredient has to be in the dish
       const hasAll = Array.from(state.ingredients).every(sel=>ingVariants(sel).some(n=>pool.has(n)));
       if(!hasAll) return false;
     }
@@ -13487,9 +13541,9 @@ function renderIngredientText(groups){
   }).join(' <span class="plus">+</span> ');
 }
 
-function equipTag(name){
+function utensilTag(name){
   const cls = SEASONINGS.has(name) ? 'season' : 'tool';
-  return `<span class="tag ${cls} name-link" data-equip="${name}" title="Filter by this equipment">${itemIcon(name,'ico-sm')}${name}</span>`;
+  return `<span class="tag ${cls} name-link" data-utensil="${name}" title="Filter by this utensil">${itemIcon(name,'ico-sm')}${name}</span>`;
 }
 
 function fmtDelta(hp,rp){
@@ -13502,11 +13556,12 @@ function extraList(items, pickedIdx, kind){
   pickedIdx = pickedIdx || new Set();
   if(items.length===0) return '<div class="ac-empty" style="padding:2px 0;">None</div>';
   // kind 'ing' marks a bonus ingredient (data-bonus turns on the optional-ingredient search on click)
-  const tap = kind==='equip'
-    ? n => `data-equip="${n}" title="Filter by this equipment"`
+  const tap = kind==='utensil'
+    ? n => `data-utensil="${n}" title="Filter by this utensil"`
     : n => `data-ing="${n}" data-bonus title="Filter by this ingredient"`;
   return '<div class="extra-list">' + items.map((i,idx)=>{
-    const isPicked = pickedIdx.has(idx);
+    // items keep their position in the recipe as .idx, so the list can be sorted freely
+    const isPicked = pickedIdx.has(i.idx===undefined ? idx : i.idx);
     return `
     <div class="extra-item ${isPicked?'picked':''}">
       <span class="nm name-link" ${tap(i.name)}>${isPicked?'<span class=\"pick-flag\">🔥</span>':''}${i.recommended?'<span class=\"star\">★</span>':''}${itemIcon(i.name,'ico-sm')}${i.name}</span>
@@ -13516,34 +13571,67 @@ function extraList(items, pickedIdx, kind){
   }).join('') + '</div>';
 }
 
+function optChip(c, kind){
+  const tap = kind==='utensil'
+    ? `data-utensil="${c.name}" title="Filter by this utensil"`
+    : `data-ing="${c.name}" data-bonus title="Filter by this ingredient"`;
+  return `<span class="optbox-item${c.filler?' filler':''}${kind==='utensil'?' uten':''}"><span class="name-link" ${tap}>${itemIcon(c.name,'ico-sm')}<b>${c.name}</b></span> ${fmtDelta(c.hp,c.rp)}</span>`;
+}
+
 function renderOptBox(v, opt){
+  if(v.optionalIngredients.length===0 && v.optionalUtensils.length===0) return '';
+
+  // bonus utensils: no slot cost, so they always come first
+  let utenHtml;
+  if(v.optionalUtensils.length===0){
+    utenHtml = '<div class="optbox-none">This recipe has no bonus utensils.</div>';
+  } else if(opt.chosenUtensils.length===0){
+    utenHtml = '<div class="optbox-none">No bonus utensil improves the selected stat.</div>';
+  } else {
+    utenHtml = `<div class="optbox-items">${opt.chosenUtensils.map(c=>optChip(c,'utensil')).join('')}</div>`;
+  }
+
+  // bonus ingredients: they share the 8 slots with the main ingredients
+  let ingHtml;
   if(v.optionalIngredients.length===0){
-    return '';
+    ingHtml = '<div class="optbox-none">This recipe has no bonus ingredients.</div>';
+  } else if(opt.remaining<=0){
+    ingHtml = `<div class="optbox-none">The main ingredients already fill all ${TOTAL_SLOTS} slots — no room left.</div>`;
+  } else if(opt.chosen.length===0){
+    ingHtml = `<div class="optbox-none">${opt.remaining} slot(s) left, but no bonus ingredient improves the selected stat without passing the fatigue limit.</div>`;
+  } else {
+    ingHtml = `<div class="optbox-items">${opt.chosen.map(c=>optChip(c,'ing')).join('')}</div>`;
   }
-  if(opt.remaining<=0){
-    return `<div class="optbox"><div class="optbox-title">🔥 Bonus Ingredient Suggestion</div><div class="optbox-none">This recipe already fills all 8 slots — no room left for bonus ingredients.</div></div>`;
-  }
-  if(opt.chosen.length===0){
-    return `<div class="optbox"><div class="optbox-title">🔥 Bonus Ingredient Suggestion</div><div class="optbox-none">${opt.remaining} slot(s) left, but no bonus ingredient improves the selected stat.</div></div>`;
-  }
-  const itemsHtml = opt.chosen.map(c=>`
-    <span class="optbox-item${c.filler?' filler':''}"><span class="name-link" data-ing="${c.name}" data-bonus title="Filter by this ingredient">${itemIcon(c.name,'ico-sm')}<b>${c.name}</b></span> ${fmtDelta(c.hp,c.rp)}</span>
-  `).join('');
+
   const fillerCount = opt.chosen.filter(c=>c.filler).length;
-  const fillerNote = fillerCount
-    ? `<div class="optbox-note">Fatigue is already full at ${RP_CAP}, so the last ${fillerCount} slot(s) go to stamina instead (shown in green).</div>`
-    : '';
+  const notes = [];
+  if(fillerCount){
+    notes.push(`No ingredient can add fatigue any more, so the last ${fillerCount} slot(s) go to stamina instead (shown in green).`);
+  }
+  if(opt.rpLimited){
+    notes.push(`Items that would push fatigue over ${RP_CAP} were skipped — the next item that still fits was picked instead.`);
+  }
+  const noteHtml = notes.length ? `<div class="optbox-note">${notes.join(' ')}</div>` : '';
+
+  const slotNote = opt.chosen.length>0 ? `using ${opt.chosen.length} of ${opt.remaining} free slots` : '';
+
   return `
     <div class="optbox">
       <div class="optbox-head">
         <div class="optbox-title">🔥 Add these for max power</div>
-        <div class="optbox-slots">Using ${opt.chosen.length}/${opt.remaining} remaining slots</div>
       </div>
-      ${fillerNote}
-      <div class="optbox-items">${itemsHtml}</div>
+      <div class="optbox-grp">
+        <div class="optbox-grp-title">🍴 Bonus Utensils</div>
+        ${utenHtml}
+      </div>
+      <div class="optbox-grp">
+        <div class="optbox-grp-title">🥕 Bonus Ingredients <span class="optbox-grp-note">${slotNote}</span></div>
+        ${ingHtml}
+      </div>
+      ${noteHtml}
       <div class="optbox-result">
-        <div class="r-item"><span class="lbl">Max Stamina</span><span class="val">${opt.maxHp} <span class="base">(base ${v.hp} +${opt.sumHp})</span></span></div>
-        <div class="r-item"><span class="lbl">Max Fatigue</span><span class="val">${opt.maxRp} <span class="base">(base ${v.rp} +${opt.sumRp}${opt.rpCapped?', capped at '+RP_CAP:''})</span></span></div>
+        <div class="r-item"><span class="lbl">Max Stamina</span><span class="val">${opt.maxHp} <span class="base">(base ${v.hp} + utensils ${opt.utenHp} + bonus ${opt.sumHp})</span></span></div>
+        <div class="r-item"><span class="lbl">Max Fatigue</span><span class="val">${opt.maxRp} <span class="base">(base ${v.rp} + utensils ${opt.utenRp} + bonus ${opt.sumRp}, limit ${RP_CAP})</span></span></div>
       </div>
     </div>
   `;
@@ -13569,7 +13657,7 @@ function buildCard(group){
       </div>
       ${tabsHtml}
       <div class="variant-panel"></div>
-      <button class="expand-btn"><span>View bonus ingredients/equipment</span><span class="arrow">▾</span></button>
+      <button class="expand-btn"><span>View bonus ingredients/utensils</span><span class="arrow">▾</span></button>
       <div class="extra"></div>
     </div>
   `;
@@ -13593,12 +13681,18 @@ function buildCard(group){
       cookHtml = missing.length===0
         ? '<div class="cook-badge ok">✔ You can cook this now</div>'
         : `<div class="cook-badge miss"><b>Missing ${missing.length}:</b> ${missing.map(g=>g.map(a=>`<span class="name-link" data-ing="${a}" title="Add to your ingredients">${itemIcon(a,'ico-sm')}${a}</span>`).join(' <span class="or">or</span> ')).join(', ')}</div>`;
+      if(state.includeOptionalIng){
+        const bonus = cookBonusMatches(v);
+        if(bonus.length>0){
+          cookHtml += `<div class="cook-badge bonus"><b>From your pantry, usable as a bonus:</b> ${bonus.map(o=>`<span class="name-link" data-ing="${o.name}" data-bonus title="Filter by this ingredient">${itemIcon(o.name,'ico-sm')}${o.name}</span> ${fmtDelta(o.hp,o.rp)}`).join(', ')}</div>`;
+        }
+      }
     }
 
     panel.innerHTML = `
       ${cookHtml}
-      <div class="row-label">Main Equipment</div>
-      <div class="equip-line">${v.mainEquipment.length? v.mainEquipment.slice().sort(cmpEquip).map(equipTag).join('') : '<span class="tag none">No main equipment needed</span>'}</div>
+      <div class="row-label">Main Utensils</div>
+      <div class="utensil-line">${v.mainUtensils.length? v.mainUtensils.slice().sort(cmpUtensil).map(utensilTag).join('') : '<span class="tag none">No main utensils needed</span>'}</div>
       <div class="row-label">Main Ingredients <span style="font-weight:400;color:var(--ink-soft);text-transform:none;">(${opt.mainSlots}/${TOTAL_SLOTS} slots)</span></div>
       <div class="ingredients-text">${renderIngredientText(v.mainIngredients)}</div>
       ${renderOptBox(v, opt)}
@@ -13607,8 +13701,8 @@ function buildCard(group){
     extra.innerHTML = `
       <div class="extra-grp-title">Bonus Ingredients (${v.optionalIngredients.length})</div>
       ${extraList(v.optionalIngredients, opt.chosenIdx, 'ing')}
-      <div class="extra-grp-title">Bonus Equipment (${v.optionalEquipment.length})</div>
-      ${extraList(v.optionalEquipment.slice().sort((a,b)=>cmpEquip(a.name,b.name)), null, 'equip')}
+      <div class="extra-grp-title">Bonus Utensils (${v.optionalUtensils.length})</div>
+      ${extraList(v.optionalUtensils.map((o,i)=>({...o, idx:i})).sort((a,b)=>cmpUtensil(a.name,b.name)), opt.chosenUtensilIdx, 'utensil')}
     `;
   }
 
@@ -13642,18 +13736,15 @@ function buildCard(group){
 
 function render(){
   // update chip active states
-  document.querySelectorAll('#equipChips .chip').forEach(c=>{
-    c.classList.toggle('active', state.equip.has(c.dataset.eq));
+  document.querySelectorAll('#utensilChips .chip').forEach(c=>{
+    c.classList.toggle('active', state.utensils.has(c.dataset.eq));
   });
-  document.getElementById('noEquipToggle').classList.toggle('active', state.noEquipOnly);
+  document.getElementById('noUtensilToggle').classList.toggle('active', state.noUtensilOnly);
   document.getElementById('favToggle').classList.toggle('active', state.favsOnly);
   document.querySelectorAll('#ingMode .ing-mode-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.mode===state.ingMode);
   });
-  // the bonus-ingredient switch only applies to "uses all selected" matching
-  const inclEl = document.getElementById('includeOptional');
-  inclEl.disabled = state.ingMode==='cook';
-  inclEl.closest('.switch-row').classList.toggle('dim', state.ingMode==='cook');
+  document.getElementById('includeOptional').checked = state.includeOptionalIng;
 
   // update selected ingredient pills
   const selIngEl = document.getElementById('selectedIng');
@@ -13689,9 +13780,9 @@ function render(){
   // active filter pills
   const af = [];
   if(state.nameQuery) af.push('Name: "'+state.nameQuery+'"');
-  if(state.noEquipOnly) af.push('No main equipment');
-  if(state.equip.size>0) af.push('Equipment: ' + Array.from(state.equip).join(' + '));
-  if(state.ingredients.size>0) af.push((state.ingMode==='cook'?'Cook from: ':'Ingredient: ') + Array.from(state.ingredients).join(' + '));
+  if(state.noUtensilOnly) af.push('No main utensils');
+  if(state.utensils.size>0) af.push('Utensils: ' + Array.from(state.utensils).join(' + '));
+  if(state.ingredients.size>0) af.push((state.ingMode==='cook'?'Cook from: ':'Ingredient: ') + Array.from(state.ingredients).join(' + ') + (state.includeOptionalIng?' (+ bonus)':''));
   if(state.favsOnly) af.push('★ Favorites');
   document.getElementById('activeFilters').innerHTML = af.map(a=>`<span class="af-pill">${a}</span>`).join('');
 
