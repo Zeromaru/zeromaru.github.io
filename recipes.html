@@ -130,7 +130,7 @@
     align-items:flex-start;
     gap:12px 18px;
   }
-  .fb-name { flex:1 1 145px; min-width:0; max-width:230px; }
+  .fb-name { flex:1 1 175px; min-width:0; max-width:240px; }
   .fb-ing  { flex:1 1 210px; min-width:0; max-width:280px; }
   .fb-utensil{ flex:6 1 300px; min-width:0; }
   /* Max-Power Mode and Sort By stack in one column */
@@ -159,6 +159,11 @@
   .field-label{
     font-size:12px; font-weight:600; letter-spacing:.04em; color:var(--ink-soft);
     text-transform:uppercase; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between;
+  }
+  /* heading for a second control inside the same field */
+  .sub-label{
+    font-size:11px; font-weight:600; letter-spacing:.04em; color:var(--ink-soft);
+    text-transform:uppercase; margin:10px 0 6px; display:flex; align-items:center; justify-content:space-between;
   }
   .clear-link{
     font-size:11px; color:var(--berry); cursor:pointer; text-decoration:underline;
@@ -285,6 +290,37 @@
   }
   .fav-btn:hover{color:var(--gold); transform:scale(1.15);}
   .fav-btn.on{color:var(--gold);}
+
+  /* cooked toggle on a card */
+  .made-btn{
+    background:var(--paper-dim); border:1.5px solid var(--line); cursor:pointer;
+    width:24px; height:24px; border-radius:50%; padding:0; flex-shrink:0;
+    font-family:inherit; font-size:13px; line-height:1; font-weight:700; color:#CFC8B8;
+    display:flex; align-items:center; justify-content:center; transition:.15s;
+  }
+  .made-btn:hover{border-color:var(--green); color:var(--green-dark);}
+  .made-btn.on{background:var(--green); border-color:var(--green); color:#fff;}
+  /* a cooked dish gets a green torn edge and a small flag */
+  .card.made::before{background-image:repeating-linear-gradient(-45deg, transparent 0 4px, var(--green-line) 4px 8px);}
+  .card.made{border-color:var(--green-line);}
+  .made-flag{
+    font-size:10.5px; font-weight:700; letter-spacing:.03em; color:var(--green-dark);
+    background:#E7F0E2; border-radius:8px; padding:2px 7px; white-space:nowrap;
+  }
+
+  /* cooked filter: all / cooked / not cooked, plus the progress readout */
+  .made-mode{display:flex; border:1.5px solid var(--line); border-radius:9px; overflow:hidden; width:100%;}
+  .made-mode-btn{
+    flex:1 1 0; min-width:0; text-align:center; white-space:nowrap;
+    font-family:inherit; font-size:11px; font-weight:600; padding:5px 4px;
+    background:var(--paper-dim); border:none; cursor:pointer; color:var(--ink-soft); transition:.15s;
+  }
+  .made-mode-btn + .made-mode-btn{border-left:1.5px solid var(--line);}
+  .made-mode-btn.active{background:var(--green-dark); color:#fff;}
+  .made-progress{margin-top:7px; font-size:11px; color:var(--ink-soft);}
+  .made-progress b{color:var(--green-dark); font-size:12px;}
+  .made-bar{height:6px; border-radius:999px; background:var(--paper-dim); border:1px solid var(--line); overflow:hidden; margin-top:4px;}
+  .made-bar i{display:block; height:100%; background:var(--green); transition:width .2s;}
   .switch-row input{accent-color:var(--green); width:15px; height:15px; cursor:pointer;}
 
   select.sort-select{
@@ -325,16 +361,20 @@
     background-image:repeating-linear-gradient(-45deg, transparent 0 4px, var(--bg) 4px 8px);
   }
   .card-body{padding:16px 18px 18px;}
-  .card-top{display:flex; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px;}
+  /* the dish code stays in the top-right corner, so the head never wraps */
+  .card-top{display:flex; flex-wrap:nowrap; justify-content:space-between; align-items:flex-start; gap:10px; margin-bottom:10px;}
   .card-name{
     font-family:'Chonburi',cursive; font-size:17px; color:var(--green-dark); line-height:1.3;
-    flex:1 1 auto; min-width:0;
   }
-  /* dish code sits on top, stat badges under it, both pinned to the right edge */
-  .card-meta{display:flex; flex-direction:column; align-items:flex-end; gap:6px; flex-shrink:0;}
+  /* left of the card head: dish name, with the two toggles under it */
+  .card-head-main{flex:1 1 0; min-width:min-content; display:flex; flex-direction:column; gap:8px;}
+  .card-acts{display:flex; align-items:center; flex-wrap:wrap; gap:6px;}
+  /* right of the card head: dish code on top, stat badges under it */
+  .card-meta{display:flex; flex-direction:column; align-items:flex-end; gap:6px; min-width:0; margin-left:auto;}
+  /* the code may break over two lines on a very narrow card instead of pushing the name */
   .dish-code{
     font-family:inherit; font-size:12px; font-weight:700; color:var(--ink-soft);
-    white-space:nowrap; letter-spacing:.02em;
+    text-align:right; letter-spacing:.02em;
   }
   .badges{display:flex; gap:6px; flex-shrink:0;}
   .badge{
@@ -480,6 +520,16 @@
         <span class="clear-link" id="clearName">Clear</span>
       </div>
       <input id="nameSearch" class="search-input" type="text" placeholder="e.g. Curry, Cake...">
+      <div class="sub-label">
+        Cooked?
+        <span class="clear-link" id="clearMade" title="Remove every cooked mark">Reset marks</span>
+      </div>
+      <div class="made-mode" id="madeMode">
+        <button class="made-mode-btn active" data-made="all" title="Show every dish">All</button>
+        <button class="made-mode-btn" data-made="done" title="Only show dishes you marked as cooked">&#10003; Cooked</button>
+        <button class="made-mode-btn" data-made="todo" title="Only show dishes you have not cooked yet">Not yet</button>
+      </div>
+      <div class="made-progress" id="madeProgress"></div>
       <button class="toggle-chip fav-chip" id="favToggle" title="Only show dishes you starred">&#9733; Show favorite only</button>
     </div>
 
@@ -517,7 +567,7 @@
       <div class="field">
         <div class="field-label">Max-Power Mode &#128293;</div>
         <select class="sort-select" id="optModeSelect" title="Works out which bonus utensils to add (they need no slot) and what to fill the remaining ingredient slots with (out of 8 total) for the biggest boost — shown on each card.">
-          <option value="hp" selected>Prioritize Stamina (default)</option>
+          <option value="hp" selected>Prioritize Stamina</option>
           <option value="rp">Prioritize Fatigue</option>
           <option value="combined">Combined Stamina + Fatigue</option>
         </select>
@@ -1067,6 +1117,7 @@ const state = {
   ingMode:'contain',      // 'contain' = dish uses all selected; 'cook' = selection is the pantry
   includeOptionalIng:false,
   favsOnly:false,
+  madeFilter:'all',      // 'all' | 'done' = cooked already | 'todo' = not cooked yet
   sort:'game-asc',
   optMode:'hp'
 };
@@ -1080,6 +1131,17 @@ const favorites = (()=>{
 function saveFavs(){
   try{ localStorage.setItem(FAV_KEY, JSON.stringify(Array.from(favorites))); }catch(e){}
 }
+
+// ---------- cooked dishes (persisted per browser, keyed by dish name) ----------
+const MADE_KEY = 'hmRecipesMade';
+const made = (()=>{
+  try{ return new Set(JSON.parse(localStorage.getItem(MADE_KEY)||'[]')); }
+  catch(e){ return new Set(); }
+})();
+function saveMade(){
+  try{ localStorage.setItem(MADE_KEY, JSON.stringify(Array.from(made))); }catch(e){}
+}
+const ALL_DISH_NAMES = Array.from(new Set(RAW_RECIPES.map(r=>r.name)));
 
 // ---------- render hero stats ----------
 document.getElementById('heroStats').innerHTML = `
@@ -1174,6 +1236,21 @@ document.getElementById('favToggle').addEventListener('click', ()=>{
   render();
 });
 
+document.querySelectorAll('#madeMode .made-mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    state.madeFilter = btn.dataset.made;
+    render();
+  });
+});
+
+document.getElementById('clearMade').addEventListener('click', ()=>{
+  if(made.size===0) return;
+  if(!confirm('Remove the cooked mark from all '+made.size+' dishes?')) return;
+  made.clear();
+  saveMade();
+  render();
+});
+
 document.getElementById('sortSelect').addEventListener('change', (e)=>{
   state.sort = e.target.value;
   render();
@@ -1199,6 +1276,7 @@ document.getElementById('resetAll').addEventListener('click', ()=>{
   state.ingMode = 'contain';
   state.includeOptionalIng = false;
   state.favsOnly = false;
+  state.madeFilter = 'all';
   state.sort = 'game-asc';
   state.optMode = 'hp';
 
@@ -1359,6 +1437,9 @@ function recipeMatches(r){
 
   if(state.favsOnly && !favorites.has(r.name)) return false;
 
+  if(state.madeFilter==='done' && !made.has(r.name)) return false;
+  if(state.madeFilter==='todo' && made.has(r.name)) return false;
+
   if(state.noUtensilOnly && r.mainUtensils.length>0) return false;
 
   if(state.utensils.size>0){
@@ -1513,15 +1594,21 @@ function buildCard(group){
   const cardId = 'card_' + first.name.replace(/[^a-zA-Z0-9]/g,'_') + '_' + first._variant;
 
   const card = document.createElement('div');
-  card.className='card';
+  card.className = 'card' + (made.has(first.name)?' made':'');
 
   const tabsHtml = hasMulti ? `<div class="variant-tabs">${group.map((v,idx)=>`<span class="vtab ${idx===openIdx?'active':''}" data-idx="${idx}">Method ${v._variant}${v._variantTotal>1?('/'+v._variantTotal):''}</span>`).join('')}</div>` : '';
 
   card.innerHTML = `
     <div class="card-body">
       <div class="card-top">
-        <div class="card-name">${itemIcon(first.name,'ico-dish')}${first.name}</div>
-        <button class="fav-btn ${favorites.has(first.name)?'on':''}" title="Toggle favorite">★</button>
+        <div class="card-head-main">
+          <div class="card-name">${itemIcon(first.name,'ico-dish')}${first.name}</div>
+          <div class="card-acts">
+            <button class="made-btn ${made.has(first.name)?'on':''}" title="${made.has(first.name)?'Cooked — click to unmark':'Mark as cooked'}">✓</button>
+            <button class="fav-btn ${favorites.has(first.name)?'on':''}" title="Toggle favorite">★</button>
+            ${made.has(first.name)?'<span class="made-flag">✓ Cooked</span>':''}
+          </div>
+        </div>
         <div class="card-meta"><span class="dish-code">${dishCode(first.name)}</span></div>
       </div>
       ${tabsHtml}
@@ -1593,6 +1680,13 @@ function buildCard(group){
     expandBtn.classList.toggle('open');
   });
 
+  card.querySelector('.made-btn').addEventListener('click', ()=>{
+    if(made.has(first.name)) made.delete(first.name);
+    else made.add(first.name);
+    saveMade();
+    render();
+  });
+
   card.querySelector('.fav-btn').addEventListener('click', ()=>{
     if(favorites.has(first.name)) favorites.delete(first.name);
     else favorites.add(first.name);
@@ -1610,6 +1704,16 @@ function render(){
   });
   document.getElementById('noUtensilToggle').classList.toggle('active', state.noUtensilOnly);
   document.getElementById('favToggle').classList.toggle('active', state.favsOnly);
+  document.querySelectorAll('#madeMode .made-mode-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.made===state.madeFilter);
+  });
+
+  // cooked progress readout
+  const madeCount = ALL_DISH_NAMES.filter(n=>made.has(n)).length;
+  const madePct = Math.round(madeCount / ALL_DISH_NAMES.length * 100);
+  document.getElementById('madeProgress').innerHTML =
+    `<b>${madeCount}</b> / ${ALL_DISH_NAMES.length} dishes cooked (${madePct}%)
+     <div class="made-bar"><i style="width:${madePct}%"></i></div>`;
   document.querySelectorAll('#ingMode .ing-mode-btn').forEach(b=>{
     b.classList.toggle('active', b.dataset.mode===state.ingMode);
   });
@@ -1660,6 +1764,8 @@ function render(){
   if(state.utensils.size>0) af.push('Utensils: ' + Array.from(state.utensils).join(' + '));
   if(state.ingredients.size>0) af.push((state.ingMode==='cook'?'Cook from: ':'Ingredient: ') + Array.from(state.ingredients).join(' + ') + (state.includeOptionalIng?' (+ bonus)':''));
   if(state.favsOnly) af.push('★ Favorites');
+  if(state.madeFilter==='done') af.push('✓ Cooked only');
+  if(state.madeFilter==='todo') af.push('Not cooked yet');
   document.getElementById('activeFilters').innerHTML = af.map(a=>`<span class="af-pill">${a}</span>`).join('');
 
   // render grid
