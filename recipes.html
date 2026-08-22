@@ -474,6 +474,53 @@
   .empty-state .emoji{font-size:38px; display:block; margin-bottom:12px;}
   .empty-state b{color:var(--ink); display:block; margin-bottom:6px; font-size:16px;}
 
+  /* ---------- Your Data panel (export / import / reset) ---------- */
+  .data-panel{
+    margin-top:34px;
+    background:var(--paper);
+    border:1px solid var(--line);
+    border-radius:4px 4px 12px 12px;
+    box-shadow:0 10px 22px -16px var(--shadow);
+    overflow:hidden;
+  }
+  .data-panel::before{
+    content:"";
+    display:block; height:8px;
+    background-image:repeating-linear-gradient(-45deg, transparent 0 4px, var(--bg) 4px 8px);
+  }
+  .data-inner{padding:16px 18px 18px;}
+  .data-panel h2{
+    font-family:'Chonburi',cursive; font-size:17px; color:var(--green-dark);
+    margin:0 0 6px; line-height:1.3; font-weight:400;
+  }
+  .data-note{margin:0 0 12px; font-size:13px; color:var(--ink-soft); max-width:62ch;}
+  .data-actions{display:flex; flex-wrap:wrap; gap:8px;}
+  .data-btn{
+    border:1.5px solid var(--green-line);
+    color:var(--green-dark);
+    background:var(--paper-dim);
+    font-family:'Sarabun',sans-serif;
+    font-size:12.5px; font-weight:600;
+    line-height:1;
+    height:30px;
+    padding:0 14px;
+    border-radius:999px;
+    cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+    transition:.15s;
+  }
+  .data-btn:hover{background:var(--green); border-color:var(--green); color:#fff;}
+  .data-btn.danger{border-color:var(--berry); color:var(--berry);}
+  .data-btn.danger:hover{background:var(--berry); border-color:var(--berry); color:#fff;}
+  .confirm-box{
+    margin-top:12px; padding:12px 14px;
+    background:var(--paper-dim);
+    border:1px dashed var(--berry);
+    border-radius:10px;
+  }
+  .confirm-box p{margin:0 0 10px; font-size:13px; color:var(--ink);}
+  .data-status{margin:10px 0 0; font-size:12.5px; color:var(--ink-soft); min-height:1em;}
+
   footer{
     text-align:center; padding:20px; font-size:12px; color:var(--ink-soft);
   }
@@ -601,6 +648,27 @@
     </div>
     <div class="grid" id="grid"></div>
   </main>
+
+  <section class="data-panel">
+    <div class="data-inner">
+      <h2>&#128190; Your Data</h2>
+      <p class="data-note">Your favorite dishes and cooked marks are saved in this browser only. Export them to a file to back up or move to another device.</p>
+      <div class="data-actions">
+        <button class="data-btn" id="exportBtn">Export file</button>
+        <button class="data-btn" id="importBtn">Import file</button>
+        <button class="data-btn danger" id="resetBtn">Reset all data</button>
+      </div>
+      <input type="file" id="importFile" accept=".json,application/json" hidden>
+      <div class="confirm-box" id="resetConfirm" hidden>
+        <p>Delete <strong id="resetCount"></strong>? This can't be undone &mdash; export a backup first if unsure.</p>
+        <div class="data-actions">
+          <button class="data-btn danger" id="resetYes">Yes, delete everything</button>
+          <button class="data-btn" id="resetNo">Cancel</button>
+        </div>
+      </div>
+      <p class="data-status" id="dataStatus"></p>
+    </div>
+  </section>
 
 </div>
 
@@ -1824,6 +1892,83 @@ function sortGroups(groupList){
   }
   return arr;
 }
+
+// ---------- export / import / reset ----------
+const DATA_APP = 'hm-recipes-book';
+const DATA_FILE = 'hm-recipes-book.json';
+const KNOWN_DISHES = new Set(ALL_DISH_NAMES);
+
+function setDataStatus(msg){ document.getElementById('dataStatus').textContent = msg; }
+
+function plural(n, word){ return n + ' ' + word + (n===1 ? '' : 's'); }
+
+function exportData(){
+  const json = JSON.stringify({
+    app: DATA_APP, version: 1,
+    favorites: Array.from(favorites),
+    made: Array.from(made)
+  }, null, 2);
+  const useClaude = typeof window.claude !== 'undefined' && typeof window.claude.use === 'function';
+  if(useClaude){
+    window.claude.use('downloads').then(dl=>{
+      if(!dl){ setDataStatus("Export isn't available in this view."); return; }
+      return dl.save({ filename: DATA_FILE, data: json })
+        .then(()=>setDataStatus('Exported.'))
+        .catch(err=>setDataStatus(err && err.code === 'declined'
+          ? 'Export canceled.'
+          : 'Export failed: ' + (err && err.message || err)));
+    });
+  } else {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([json], { type:'application/json' }));
+    a.download = DATA_FILE;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    setDataStatus('Exported ' + DATA_FILE + '.');
+  }
+}
+
+// the file replaces what is in this browser; unknown dish names are dropped
+function importData(file){
+  file.text().then(text=>{
+    const obj = JSON.parse(text);
+    if(!obj || obj.app !== DATA_APP || !Array.isArray(obj.favorites) || !Array.isArray(obj.made)){
+      setDataStatus('Not a Recipes Book file.'); return;
+    }
+    const keep = list => list.filter(n => typeof n === 'string' && KNOWN_DISHES.has(n));
+    favorites.clear(); keep(obj.favorites).forEach(n=>favorites.add(n));
+    made.clear(); keep(obj.made).forEach(n=>made.add(n));
+    saveFavs(); saveMade(); render();
+    setDataStatus('Imported ' + plural(favorites.size,'favorite') + ' and ' + plural(made.size,'cooked mark') + '.');
+  }).catch(()=>setDataStatus("Couldn't read that file."));
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportData);
+document.getElementById('importBtn').addEventListener('click', ()=>document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', e=>{
+  if(e.target.files[0]) importData(e.target.files[0]);
+  e.target.value = '';
+});
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  document.getElementById('resetCount').textContent =
+    plural(favorites.size,'favorite') + ' and ' + plural(made.size,'cooked mark');
+  document.getElementById('resetConfirm').hidden = false;
+  document.getElementById('resetBtn').hidden = true;
+  setDataStatus('');
+});
+document.getElementById('resetNo').addEventListener('click', ()=>{
+  document.getElementById('resetConfirm').hidden = true;
+  document.getElementById('resetBtn').hidden = false;
+});
+document.getElementById('resetYes').addEventListener('click', ()=>{
+  favorites.clear(); made.clear();
+  saveFavs(); saveMade();
+  document.getElementById('resetConfirm').hidden = true;
+  document.getElementById('resetBtn').hidden = false;
+  render();
+  setDataStatus('All data deleted.');
+});
 
 render();
 </script>
