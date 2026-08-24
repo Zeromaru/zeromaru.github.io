@@ -269,7 +269,7 @@
 <header class="hero">
   <div class="hero-eyebrow">Harvest Moon GBA · (More) Friends of Mineral Town</div>
   <h1>Cooking Simulator</h1>
-  <p>Pick your utensils, seasonings and up to 8 ingredients, then cook. Hit a real recipe and you get the dish with its Stamina and Fatigue — miss it and the kitchen hands you a Failure.</p>
+  <p>Pick your utensils, seasoning set and up to 8 ingredients, then cook. Hit a real recipe and you get the dish with its Stamina and Fatigue — miss it and the kitchen hands you a Failure.</p>
   <div class="torn"></div>
 </header>
 
@@ -281,7 +281,7 @@
     <div class="field-label">Utensils <span class="hint" id="utensilHint"></span></div>
     <div class="chiprow" id="utensilRow"></div>
 
-    <div class="field-label">Seasonings</div>
+    <div class="field-label">Seasoning set</div>
     <div class="chiprow" id="seasonRow"></div>
 
     <div class="field-label">Ingredients <span class="hint" id="slotCount"></span></div>
@@ -791,10 +791,13 @@ const FAMILIES = {
 const LABEL = { 'Vegetable': 'Vegetable Juice' };
 const label = n => LABEL[n] || n;
 
-// the failed dish depends on the utensil, in this order
+// The failed dish depends on the utensil, highest priority first. Oven has no
+// failure of its own and shares the Whisk one; the seasoning set, which is last,
+// shares the Knife one.
 const FAILURE_BY_TOOL = [
-  ['Knife','Knife Failure'], ['Frying Pan','Frying Pan Failure'], ['Pot','Pot Failure'],
-  ['Mixer','Mixer Failure'], ['Whisk','Whisk Failure'], ['Rolling Pin','Rolling Pin Failure']
+  ['Mixer','Mixer Failure'], ['Rolling Pin','Rolling Pin Failure'], ['Whisk','Whisk Failure'],
+  ['Oven','Whisk Failure'], ['Pot','Pot Failure'], ['Frying Pan','Frying Pan Failure'],
+  ['Knife','Knife Failure']
 ];
 
 // ---------- pantry ----------
@@ -947,7 +950,8 @@ function rankNear(a,b){
 
 function failureDish(){
   const hit = FAILURE_BY_TOOL.find(([tool])=>state.utensils.has(tool));
-  return hit ? hit[1] : null;
+  if(hit) return hit[1];
+  return SEASONINGS.some(n=>state.utensils.has(n)) ? 'Knife Failure' : null;
 }
 
 // ---------- rendering ----------
