@@ -22,12 +22,51 @@
     --berry:#A63D40;
     --line:#D8C7A0;
     --shadow:rgba(51,41,28,.20);
+    --bg-wash:rgba(255,255,255,.35);
+    --hero-a:#2A4027;
+    --hero-b:#3F5D3A;
   }
+  /* night version of the same paper theme */
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#231E16;
+      --bg-wash:rgba(255,255,255,.04);
+      --paper:#2E2820;
+      --ink:#EDE3D0;
+      --ink-soft:#B0A48A;
+      --green:#7FA870;
+      --green-dark:#9BC08B;
+      --green-line:#6E8C60;
+      --gold:#DDB165;
+      --berry:#DE8B82;
+      --line:#4A4234;
+      --shadow:rgba(0,0,0,.5);
+      --hero-a:#1B2A18;
+      --hero-b:#2A4027;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#231E16;
+    --bg-wash:rgba(255,255,255,.04);
+    --paper:#2E2820;
+    --ink:#EDE3D0;
+    --ink-soft:#B0A48A;
+    --green:#7FA870;
+    --green-dark:#9BC08B;
+    --green-line:#6E8C60;
+    --gold:#DDB165;
+    --berry:#DE8B82;
+    --line:#4A4234;
+    --shadow:rgba(0,0,0,.5);
+    --hero-a:#1B2A18;
+    --hero-b:#2A4027;
+  }
+
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;height:100%;}
   body{
     background:
-      radial-gradient(ellipse at top left, rgba(255,255,255,.35), transparent 55%),
+      radial-gradient(ellipse at top left, var(--bg-wash), transparent 55%),
       var(--bg);
     color:var(--ink);
     font-family:'Sarabun',sans-serif;
@@ -36,12 +75,12 @@
     flex-direction:column;
     min-height:100vh;
   }
-  ::selection{background:var(--gold-soft);}
+  ::selection{background:var(--gold-soft); color:#33291C;}
 
   .hero{
     position:relative;
-    background:linear-gradient(180deg, var(--green-dark) 0%, var(--green) 100%);
-    color:var(--paper);
+    background:linear-gradient(180deg, var(--hero-a) 0%, var(--hero-b) 100%);
+    color:#FFFBF2;
     padding:64px 24px 72px;
     text-align:center;
     overflow:hidden;
@@ -69,7 +108,7 @@
   }
   .hero p{
     margin:0;
-    color:rgba(255,251,242,.85);
+    color:#DCE6D4;
     font-size:16px;
   }
 
@@ -92,12 +131,12 @@
     padding:28px 26px;
     text-decoration:none;
     color:inherit;
-    box-shadow:0 2px 4px var(--shadow), 0 10px 24px rgba(51,41,28,.08);
+    box-shadow:0 2px 4px var(--shadow), 0 10px 24px var(--shadow);
     transition:transform .15s ease, box-shadow .15s ease;
   }
   .card:hover{
     transform:translateY(-3px);
-    box-shadow:0 4px 8px var(--shadow), 0 16px 32px rgba(51,41,28,.14);
+    box-shadow:0 4px 8px var(--shadow), 0 16px 32px var(--shadow);
   }
   .card-icon{font-size:34px; line-height:1; margin-bottom:14px;}
   .card h2{
@@ -127,15 +166,64 @@
     font-size:13px;
     border-top:1px solid var(--line);
   }
+
+  /* ---------- Light / dark toggle ---------- */
+  .theme-btn{
+    position:absolute; top:14px; right:16px; z-index:5;
+    width:38px; height:38px; border-radius:50%;
+    border:1.5px solid rgba(239,206,147,.45);
+    background:rgba(0,0,0,.18); color:var(--gold-soft);
+    font-size:16px; line-height:1; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:.15s;
+  }
+  .theme-btn:hover{ background:rgba(0,0,0,.34); border-color:var(--gold-soft); }
 </style>
+<script>
+  // the theme choice is shared by every page in this folder
+  (function(){
+    try{
+      var t = localStorage.getItem('hm-theme');
+      if(t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t);
+    }catch(e){}
+  })();
+</script>
+
 </head>
 <body>
 
 <header class="hero">
-  <p class="hero-eyebrow">Harvest Moon &middot; Friends of Mineral Town</p>
+  <p class="hero-eyebrow">Harvest Moon GBA &middot; (More) Friends of Mineral Town</p>
   <h1>Mineral Town Notes</h1>
+  <button class="theme-btn" id="themeBtn" type="button">🌙</button>
   <p>Recipes, cooking simulator, and calendar for the GBA farm life</p>
 </header>
+
+
+<script>
+(function(){
+  var root = document.documentElement, btn = document.getElementById('themeBtn');
+  var mq = matchMedia('(prefers-color-scheme:dark)');
+  // no saved choice means the page follows the system setting
+  function isDark(){
+    var t = root.getAttribute('data-theme');
+    return t ? t === 'dark' : mq.matches;
+  }
+  function paint(){
+    var dark = isDark(), label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+    btn.textContent = dark ? '☀️' : '🌙';
+    btn.title = label; btn.setAttribute('aria-label', label);
+  }
+  btn.addEventListener('click', function(){
+    var next = isDark() ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try{ localStorage.setItem('hm-theme', next); }catch(e){}
+    paint();
+  });
+  mq.addEventListener('change', paint);
+  paint();
+})();
+</script>
 
 <main>
   <a class="card" href="recipes.html" target="_blank">
