@@ -251,6 +251,8 @@
   }
   .cook-btn:hover{ filter:brightness(1.07); }
   .cook-btn:active{ transform:translateY(3px); box-shadow:0 1px 0 var(--btn-shadow); }
+  .cook-btn:disabled{ opacity:.45; cursor:not-allowed; filter:none; }
+  .cook-btn:disabled:active{ transform:none; box-shadow:0 4px 0 var(--btn-shadow); }
   .ghost-btn{
     font-family:inherit; font-size:12.5px; font-weight:600;
     background:var(--paper-dim); color:var(--ink-soft);
@@ -407,7 +409,7 @@
 <header class="hero">
   <div class="hero-eyebrow">Harvest Moon GBA · (More) Friends of Mineral Town</div>
   <h1>Cooking Simulator</h1>
-  <p>Pick your utensils, seasoning set and up to 8 ingredients, then cook. Hit a real recipe and you get the dish with its Stamina and Fatigue — miss it and the kitchen hands you a Failure.</p>
+  <p>Pick your utensils, seasoning set and 1 to 8 ingredients, then cook. Hit a real recipe and you get the dish with its Stamina and Fatigue — miss it and the kitchen hands you a Failure.</p>
   <button class="theme-btn" id="themeBtn" type="button">🌙</button>
   <div class="torn"></div>
 </header>
@@ -1179,14 +1181,17 @@ function renderGrid(){
 }
 
 function renderPossible(){
-  if(!state.utensils.size && !state.ingredients.length){ $('possible').textContent = ''; return; }
+  if(!state.ingredients.length){
+    $('possible').textContent = state.utensils.size ? 'pick at least 1 ingredient' : '';
+    return;
+  }
   const n = RECIPES.filter(r=>evaluate(r, state.utensils, state.ingredients).ok).length;
   $('possible').innerHTML = n ? `<b>${n}</b> recipe${n>1?'s':''} match right now` : 'nothing matches yet';
 }
 
 function renderIdle(){
   $('resultBody').innerHTML =
-    `<div class="res-idle"><span class="big">🥄</span>Put the utensils and ingredients on the counter,<br>then press <b>Cook!</b></div>`;
+    `<div class="res-idle"><span class="big">🥄</span>Put the utensils and at least <b>1 ingredient</b> on the counter,<br>then press <b>Cook!</b></div>`;
 }
 
 function tagList(names, cls){
@@ -1287,8 +1292,15 @@ function renderMenu(){
   ).join('');
 }
 
+// Cooking needs at least one ingredient, so the button stays off until one is picked.
+function renderCookBtn(){
+  const btn = $('cookBtn');
+  btn.disabled = !state.ingredients.length;
+  btn.title = btn.disabled ? 'Pick at least 1 ingredient first' : '';
+}
+
 function renderAll(){
-  renderChips(); renderSlots(); renderTabs(); renderGrid(); renderPossible();
+  renderChips(); renderSlots(); renderTabs(); renderGrid(); renderPossible(); renderCookBtn();
 }
 
 // ---------- events ----------
@@ -1315,7 +1327,7 @@ $('slots').addEventListener('click', e=>{
   const cell = e.target.closest('[data-drop]');
   if(!cell) return;
   state.ingredients.splice(+cell.dataset.drop, 1);
-  renderSlots(); renderGrid(); renderPossible();
+  renderSlots(); renderGrid(); renderPossible(); renderCookBtn();
 });
 
 $('grid').addEventListener('click', e=>{
@@ -1325,7 +1337,7 @@ $('grid').addEventListener('click', e=>{
   const at = state.ingredients.indexOf(n);
   if(at >= 0) state.ingredients.splice(at, 1);
   else if(state.ingredients.length < MAX_SLOTS) state.ingredients.push(n);
-  renderSlots(); renderGrid(); renderPossible();
+  renderSlots(); renderGrid(); renderPossible(); renderCookBtn();
 });
 
 $('tabs').addEventListener('click', e=>{
@@ -1338,8 +1350,8 @@ $('tabs').addEventListener('click', e=>{
 $('search').addEventListener('input', e=>{ state.q = e.target.value; renderGrid(); });
 
 $('cookBtn').addEventListener('click', ()=>{
-  if(!state.utensils.size && !state.ingredients.length){
-    $('resultBody').innerHTML = `<div class="res-idle"><span class="big">🤔</span>The counter is empty.</div>`;
+  if(!state.ingredients.length){
+    $('resultBody').innerHTML = `<div class="res-idle"><span class="big">🤔</span>Pick at least <b>1 ingredient</b> before you cook.</div>`;
     return;
   }
   const res = cook();
@@ -1361,17 +1373,22 @@ $('clearBtn').addEventListener('click', ()=>{
 
 // picks a real recipe and lays it out on the counter, bonus items included
 $('randomBtn').addEventListener('click', ()=>{
-  const r = RECIPES[Math.floor(Math.random() * RECIPES.length)];
-  state.utensils = new Set(r.mainUtensils);
-  state.ingredients = r.mainIngredients.map(g=>{
-    const want = g[Math.floor(Math.random() * g.length)];
-    return FAMILIES[want] ? FAMILIES[want][0] : want;
-  });
-  // fill a slot or two with bonus items so the numbers are worth looking at
-  const spare = r.optionalIngredients
-    .filter(o=>o.hp > 0 && state.ingredients.indexOf(o.name) < 0)
-    .sort((a,b)=>(b.hp + b.rp) - (a.hp + a.rp));
-  while(state.ingredients.length < MAX_SLOTS && spare.length) state.ingredients.push(spare.shift().name);
+  // retry so the counter never ends up without an ingredient
+  for(let tries = 0; tries < 50; tries++){
+    const r = RECIPES[Math.floor(Math.random() * RECIPES.length)];
+    state.utensils = new Set(r.mainUtensils);
+    state.ingredients = r.mainIngredients.map(g=>{
+      const want = g[Math.floor(Math.random() * g.length)];
+      return FAMILIES[want] ? FAMILIES[want][0] : want;
+    });
+    // fill a slot or two with bonus items so the numbers are worth looking at
+    const spare = r.optionalIngredients
+      .filter(o=>o.hp > 0 && state.ingredients.indexOf(o.name) < 0)
+      .sort((a,b)=>(b.hp + b.rp) - (a.hp + a.rp));
+    while(state.ingredients.length < MAX_SLOTS && spare.length) state.ingredients.push(spare.shift().name);
+    if(state.ingredients.length) break;
+  }
+  if(!state.ingredients.length){ renderAll(); renderIdle(); return; }
   renderAll();
   $('resultBody').innerHTML = renderResult(cook());
   renderHistory();
