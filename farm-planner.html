@@ -245,6 +245,7 @@
       <button class="btn" id="fillAll">🪣 Fill all with selection</button>
       <button class="btn" id="fillEmpty">🫗 Fill empty cells with selection</button>
       <button class="btn" id="eraseSel" title="Empties every cell that currently holds the selected tile (for a crop: the selected stage only)">🧹 Erase selection everywhere</button>
+      <button class="btn" id="loadReco" title="Replaces the plan with a ready-made farm layout: lumber walls, hoed and watered plots, and a grass field on the right">⭐ Load recommended</button>
       <button class="btn danger" id="clearAll">Clear all</button>
       <button class="btn touchonly" id="dragPaint" title="While this is on, dragging a finger over the grid paints every cell it crosses — turn it off to scroll the grid again">✋ Drag to paint</button>
       <span class="sub mouseonly" style="font-size:12.5px;color:var(--muted)">Click/drag to paint · right-click to empty a cell</span>
@@ -773,6 +774,44 @@
     if(unknown) parts.push(unknown+' unknown values skipped');
     if(outside) parts.push(outside+' addresses outside the map');
     msg.textContent = parts.join(', ');
+  });
+
+  // ---- recommended layout ----
+  // one char per cell, row by row
+  const RECO_CHARS = {'.':'0000', 'h':'0002', 'L':'0860', 'g':'9551'};
+  const RECO_ROWS = [
+    ".........LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+    ".........LggggggggggggggggggggggggggggggggL",
+    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+    ".hhh.hhh.LLLLLLLLLLLLLLLLLLLLLLLLLggggggggL",
+    ".................................LggggggggL",
+    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+    ".................................LggggggggL",
+    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+    ".................................LggggggggL",
+    "LLLLLLLLLLLLLLLL.hhh.hhh.hhh.hhh.LggggggggL",
+    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+    "L..............L.................LggggggggL",
+    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+    "LLLLLLLLLLLLLLLL.................LLLLLLLLLL",
+  ];
+  document.getElementById('loadReco').addEventListener('click', function(){
+    if(cells.some(Boolean) && !confirm('Replace the whole plan with the recommended layout?')) return;
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++) cells[r*COLS+c] = VALUE2ID[RECO_CHARS[RECO_ROWS[r][c]]] || null;
+    }
+    renderAll(); saveState();
   });
 
   document.getElementById('eraser').addEventListener('click', function(){
