@@ -138,6 +138,13 @@
     padding:12px;
   }
   .gridscroll{overflow-x:auto;padding-bottom:4px}
+  /* drag-paint mode: the finger paints instead of scrolling the grid */
+  .gridscroll.paintdrag{touch-action:none}
+  .touchonly{display:none}
+  @media (hover:none) and (pointer:coarse){
+    .touchonly{display:inline-block}
+    .mouseonly{display:none}
+  }
   table.farm{border-collapse:collapse;font-family:"IBM Plex Mono",monospace}
   table.farm th{
     font-size:9px;font-weight:500;color:var(--muted);
@@ -205,6 +212,23 @@
   @media (prefers-reduced-motion: no-preference){
     .sw,.btn{transition:border-color .12s, box-shadow .12s}
   }
+  /* small screens: the palette stops floating over the grid */
+  @media (max-width: 820px){
+    body{padding:14px 12px 40px}
+    .layout{gap:12px;margin-top:12px}
+    .palette{
+      position:static;
+      flex:1 1 100%;
+      width:100%;
+      max-height:42vh;
+      padding:12px;
+      gap:12px;
+    }
+    .center{flex:1 1 100%}
+    .gridwrap,.codes{padding:10px}
+    .toolrow .btn{flex:1 1 auto}
+    textarea#out{height:180px}
+  }
 </style>
 
 <header>
@@ -222,7 +246,9 @@
       <button class="btn" id="fillEmpty">🫗 Fill empty cells with selection</button>
       <button class="btn" id="eraseSel" title="Empties every cell that currently holds the selected tile (for a crop: the selected stage only)">🧹 Erase selection everywhere</button>
       <button class="btn danger" id="clearAll">Clear all</button>
-      <span class="sub" style="font-size:12.5px;color:var(--muted)">Click/drag to paint · right-click to empty a cell</span>
+      <button class="btn touchonly" id="dragPaint" title="While this is on, dragging a finger over the grid paints every cell it crosses — turn it off to scroll the grid again">✋ Drag to paint</button>
+      <span class="sub mouseonly" style="font-size:12.5px;color:var(--muted)">Click/drag to paint · right-click to empty a cell</span>
+      <span class="sub touchonly" style="font-size:12.5px;color:var(--muted)">Tap a cell to paint · turn on “Drag to paint” to paint by swiping</span>
     </div>
 
     <div class="gridwrap">
@@ -619,6 +645,53 @@
   window.addEventListener('mouseup', function(){
     if(painting){ painting = false; saveState(); }
   });
+
+  // ---- touch painting ----
+  // A touch drag scrolls the grid by default; with drag-paint on it paints instead.
+  let paintDrag = false;
+  let touchPainting = false;
+  let lastTouched = '';
+  const dragBtn = document.getElementById('dragPaint');
+  dragBtn.addEventListener('click', function(){
+    paintDrag = !paintDrag;
+    this.classList.toggle('on', paintDrag);
+    gridscroll.classList.toggle('paintdrag', paintDrag);
+  });
+  function cellAtPoint(x,y){
+    const el = document.elementFromPoint(x,y);
+    return el ? el.closest('td.cell') : null;
+  }
+  function paintTouch(t){
+    const td = cellAtPoint(t.clientX, t.clientY);
+    if(!td) return;
+    const key = td.dataset.c+','+td.dataset.r;
+    if(key === lastTouched) return;   // the finger is still on the same cell
+    lastTouched = key;
+    const c = +td.dataset.c, r = +td.dataset.r;
+    updateStatus(c,r);
+    applyAt(c,r);
+  }
+  gridscroll.addEventListener('touchstart', function(ev){
+    if(!paintDrag || ev.touches.length > 1) return;
+    if(!cellAtPoint(ev.touches[0].clientX, ev.touches[0].clientY)) return;
+    ev.preventDefault();   // also stops the emulated mouse events
+    touchPainting = true;
+    lastTouched = '';
+    paintTouch(ev.touches[0]);
+  }, {passive:false});
+  gridscroll.addEventListener('touchmove', function(ev){
+    if(!touchPainting) return;
+    ev.preventDefault();
+    paintTouch(ev.touches[0]);
+  }, {passive:false});
+  function endTouch(){
+    if(!touchPainting) return;
+    touchPainting = false;
+    lastTouched = '';
+    saveState();
+  }
+  gridscroll.addEventListener('touchend', endTouch);
+  gridscroll.addEventListener('touchcancel', endTouch);
 
   function updateStatus(c,r){
     document.getElementById('stPos').textContent = '('+c+','+r+')';
