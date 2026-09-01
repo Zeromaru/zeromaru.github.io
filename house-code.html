@@ -1,196 +1,323 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>House Upgrade Code Generator - MFoMT</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      max-width: 700px;
-      margin: 30px auto;
-      padding: 20px;
-      background: #f7f7f7;
-    }
-    h2 { margin-top: 0; }
-    .section {
-      background: white;
-      padding: 15px 20px;
-      margin-bottom: 15px;
-      border-radius: 8px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    label { display: block; margin: 6px 0; cursor: pointer; }
-    select {
-      padding: 8px 12px;
-      font-size: 15px;
-    }
-    #result {
-      background: #222;
-      color: #0f0;
-      padding: 15px;
-      border-radius: 6px;
-      font-family: monospace;
-      font-size: 16px;
-      white-space: pre;
-      margin-top: 15px;
-      min-height: 70px;
-    }
-    #copyBtn {
-      margin-top: 10px;
-      padding: 10px 18px;
-      font-size: 15px;
-      color: white;
-      background: #2f7d32;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    #copyBtn:hover { background: #276b2a; }
-    #copyBtn.copied { background: #555; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>House Upgrade Code Generator</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #fff;
+    --line: #e3e5e9;
+    --text: #1d2025;
+    --muted: #6b7280;
+    --accent: #2f7d32;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", sans-serif;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+    background: var(--bg);
+    color: var(--text);
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 20px; font-size: 14px; }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .head h2 { font-size: 15px; margin: 0; }
+  .tag {
+    font-family: ui-monospace, monospace;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .tag b { color: var(--accent); font-size: 14px; }
+  select {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 14px;
+    font-family: ui-monospace, monospace;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+  }
+  .opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 2px 14px; }
+  label { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; font-size: 14px; }
+  label code { color: var(--muted); font-size: 12px; min-width: 20px; }
+  .all { font-weight: 600; border-top: 1px solid var(--line); margin-top: 6px; padding-top: 8px; }
+  .fixed { font-family: ui-monospace, monospace; color: var(--muted); font-size: 14px; }
+  #out {
+    display: block;
+    width: 100%;
+    background: #16181d;
+    color: #5ee08a;
+    padding: 16px;
+    border: 0;
+    border-radius: 10px;
+    font-family: ui-monospace, monospace;
+    font-size: 16px;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+    resize: none;
+    -webkit-user-select: text;
+    user-select: text;
+    -webkit-touch-callout: default;
+  }
+  .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; min-height: 18px; }
+  .bar { display: flex; gap: 8px; margin-top: 10px; }
+  button {
+    padding: 10px 16px;
+    font-size: 15px;
+    -webkit-appearance: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.primary.done { background: #555; border-color: #555; }
+</style>
 </head>
 <body>
 
-  <h2>House Upgrade Code Generator</h2>
-  <p>สำหรับ Harvest Moon: More Friends of Mineral Town</p>
+<h1>House Upgrade Code Generator</h1>
+<p class="sub">Harvest Moon: More Friends of Mineral Town &mdash; CodeBreaker</p>
 
-  <div class="section">
-    <h3>ส่วนขยายบ้าน</h3>
-    <select id="uu">
-      <option value="00">00 - บ้านปกติ</option>
-      <option value="01">01 - ขยายครั้งที่ 1</option>
-      <option value="02">02 - ขยายครั้งที่ 2</option>
-    </select>
-  </div>
+<div id="form"></div>
 
-  <div class="section">
-    <h3>ของในบ้าน</h3>
-    <label><input type="checkbox" class="vv" value="01"> ห้องน้ำ</label>
-    <label><input type="checkbox" class="vv" value="02"> ตู้เย็น</label>
-    <label><input type="checkbox" class="vv" value="04"> ตู้เก็บของ</label>
-    <label><input type="checkbox" class="vv" value="08"> เครื่องเล่นเพลง</label>
-    <label><input type="checkbox" class="vv" value="10"> เตียงใหญ่</label>
-    <label><input type="checkbox" class="vv" value="20"> พรม</label>
-    <label><input type="checkbox" class="vv" value="40"> แจกัน</label>
-  </div>
+<textarea id="out" rows="3" readonly inputmode="none" spellcheck="false"
+  autocapitalize="off" autocorrect="off"></textarea>
+<div class="bar">
+  <button id="copy" class="primary" type="button">Copy code</button>
+  <button id="reset" type="button">Reset</button>
+</div>
+<p id="hint" class="hint"></p>
 
-  <div class="section">
-    <h3>ของตกแต่ง</h3>
-    <label><input type="checkbox" class="xx" value="08"> กระจก</label>
-    <label><input type="checkbox" class="xx" value="10"> นาฬิกา</label>
-    <label><input type="checkbox" class="xx" value="20"> ถุงเท้า</label>
-  </div>
+<script>
+// Each field is one hex byte.
+// select = pick one value, flags = base OR'd with every checked bit, fixed = constant.
+const FIELDS = [
+  { key: "uu", label: "House Expansion", type: "select", options: [
+    { v: 0x00, label: "Default" },
+    { v: 0x01, label: "1st House Expansion" },
+    { v: 0x02, label: "2nd House Expansion" },
+  ]},
+  { key: "vv", label: "House Items", type: "flags", base: 0x00, options: [
+    { v: 0x01, label: "Bathroom" },
+    { v: 0x02, label: "Refrigerator" },
+    { v: 0x04, label: "Cupboard" },
+    { v: 0x08, label: "Music Player" },
+    { v: 0x10, label: "Large Bed" },
+    { v: 0x20, label: "Carpet" },
+    { v: 0x40, label: "Vase" },
+  ]},
+  { key: "ww", label: "Reserved", type: "fixed", value: 0x35 },
+  { key: "xx", label: "Decorations", type: "flags", base: 0x81, options: [
+    { v: 0x08, label: "Mirror" },
+    { v: 0x10, label: "Clock" },
+    { v: 0x20, label: "Socks" },
+  ]},
+  { key: "yy", label: "Special State", type: "select", options: [
+    { v: 0x1A, label: "Default" },
+    { v: 0x3A, label: "Something in socks (but cannot take out)" },
+    { v: 0x5A, label: "Fireplace has a fire" },
+    { v: 0x9A, label: "Kitchen" },
+  ]},
+  { key: "zz", label: "Kitchen Tools", type: "flags", base: 0x00, options: [
+    { v: 0x01, label: "Knife" },
+    { v: 0x02, label: "Frying Pan" },
+    { v: 0x04, label: "Pot" },
+    { v: 0x08, label: "Mixer" },
+    { v: 0x10, label: "Whisk" },
+    { v: 0x20, label: "Rolling Pin" },
+    { v: 0x40, label: "Oven" },
+    { v: 0x80, label: "Seasoning Set" },
+  ]},
+];
 
-  <div class="section">
-    <h3>สถานะพิเศษ</h3>
-    <select id="yy">
-      <option value="1A">1A - ปกติ</option>
-      <option value="3A">3A - มีของในถุงเท้า</option>
-      <option value="5A">5A - เตาผิงมีไฟ</option>
-      <option value="9A">9A - ครัว</option>
-    </select>
-  </div>
+// [address, high byte, low byte]
+const LINES = [
+  ["82005000", "vv", "uu"],
+  ["82005002", "xx", "ww"],
+  ["82005004", "zz", "yy"],
+];
 
-  <div class="section">
-    <h3>อุปกรณ์ครัว</h3>
-    <label><input type="checkbox" class="zz" value="01"> มีด</label>
-    <label><input type="checkbox" class="zz" value="02"> กระทะ</label>
-    <label><input type="checkbox" class="zz" value="04"> หม้อ</label>
-    <label><input type="checkbox" class="zz" value="08"> เครื่องปั่น</label>
-    <label><input type="checkbox" class="zz" value="10"> ที่ตีไข่</label>
-    <label><input type="checkbox" class="zz" value="20"> ไม้นวดแป้ง</label>
-    <label><input type="checkbox" class="zz" value="40"> เตาอบ</label>
-    <label><input type="checkbox" class="zz" value="80"> ชุดเครื่องปรุง</label>
-  </div>
+const hex = v => (v & 0xFF).toString(16).toUpperCase().padStart(2, "0");
+const allOf = f => f.options.reduce((acc, o) => acc | o.v, f.base);
 
-  <div id="result">กำลังสร้างสูตร...</div>
-  <button id="copyBtn" type="button">คัดลอกโค้ด</button>
+const buildCode = state => LINES
+  .map(([addr, hi, lo]) => addr + " " + hex(state[hi]) + hex(state[lo]))
+  .join("\n");
 
-  <script>
-    function generate() {
-      // UU
-      let uu = document.getElementById("uu").value;
+const state = {};
+const tags = {};
+const out = document.getElementById("out");
 
-      // VV
-      let vv = 0;
-      document.querySelectorAll(".vv:checked").forEach(el => {
-        vv |= parseInt(el.value, 16);
-      });
-      let vvHex = vv.toString(16).toUpperCase().padStart(2, "0");
+function update() {
+  for (const f of FIELDS) tags[f.key].innerHTML = f.key.toUpperCase() + " = <b>" + hex(state[f.key]) + "</b>";
+  out.value = buildCode(state);
+}
 
-      // XX (เริ่มจาก 81)
-      let xx = 0x81;
-      document.querySelectorAll(".xx:checked").forEach(el => {
-        xx |= parseInt(el.value, 16);
-      });
-      let xxHex = xx.toString(16).toUpperCase().padStart(2, "0");
+function buildSelect(f) {
+  state[f.key] = f.options[0].v;
+  const el = document.createElement("select");
+  for (const o of f.options) el.add(new Option(hex(o.v) + "  " + o.label, o.v));
+  el.addEventListener("change", () => { state[f.key] = Number(el.value); update(); });
+  return [el];
+}
 
-      // WW ใช้ค่า default
-      let ww = "35";
+function buildFlags(f) {
+  state[f.key] = f.base;
+  const boxes = [];
+  const row = (box, text, cls) => {
+    const l = document.createElement("label");
+    if (cls) l.className = cls;
+    const code = document.createElement("code");
+    l.append(box, code, text);
+    return [l, code];
+  };
 
-      // YY
-      let yy = document.getElementById("yy").value;
-
-      // ZZ
-      let zz = 0;
-      document.querySelectorAll(".zz:checked").forEach(el => {
-        zz |= parseInt(el.value, 16);
-      });
-      let zzHex = zz.toString(16).toUpperCase().padStart(2, "0");
-
-      // สร้างโค้ด
-      let code = 
-        `82005000 ${vvHex}${uu}\n` +
-        `82005002 ${xxHex}${ww}\n` +
-        `82005004 ${zzHex}${yy}`;
-
-      document.getElementById("result").textContent = code;
-    }
-
-    // ปุ่มคัดลอกโค้ด
-    const copyBtn = document.getElementById("copyBtn");
-
-    function copyText(text) {
-      if (navigator.clipboard && window.isSecureContext) {
-        return navigator.clipboard.writeText(text);
-      }
-      // fallback สำหรับตอนเปิดไฟล์ตรงๆ (file://)
-      return new Promise((resolve, reject) => {
-        const ta = document.createElement("textarea");
-        ta.value = text;
-        ta.style.position = "fixed";
-        ta.style.opacity = "0";
-        document.body.appendChild(ta);
-        ta.select();
-        const ok = document.execCommand("copy");
-        document.body.removeChild(ta);
-        ok ? resolve() : reject();
-      });
-    }
-
-    copyBtn.addEventListener("click", () => {
-      const text = document.getElementById("result").textContent;
-      copyText(text).then(() => {
-        copyBtn.textContent = "คัดลอกแล้ว!";
-        copyBtn.classList.add("copied");
-        setTimeout(() => {
-          copyBtn.textContent = "คัดลอกโค้ด";
-          copyBtn.classList.remove("copied");
-        }, 1500);
-      }).catch(() => {
-        copyBtn.textContent = "คัดลอกไม่สำเร็จ";
-        setTimeout(() => { copyBtn.textContent = "คัดลอกโค้ด"; }, 1500);
-      });
+  const grid = document.createElement("div");
+  grid.className = "opts";
+  for (const o of f.options) {
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.addEventListener("change", () => {
+      state[f.key] = box.checked ? state[f.key] | o.v : state[f.key] & ~o.v;
+      syncAll();
+      update();
     });
+    boxes.push(box);
+    const [l, code] = row(box, o.label);
+    code.textContent = hex(o.v);
+    grid.appendChild(l);
+  }
 
-    // ผูก event ให้ทุก input
-    document.querySelectorAll("input, select").forEach(el => {
-      el.addEventListener("change", generate);
+  const allBox = document.createElement("input");
+  allBox.type = "checkbox";
+  allBox.addEventListener("change", () => {
+    boxes.forEach(b => { b.checked = allBox.checked; });
+    state[f.key] = allBox.checked ? allOf(f) : f.base;
+    update();
+  });
+  const [allLabel, allCode] = row(allBox, "All", "all");
+  allCode.textContent = hex(allOf(f));
+
+  function syncAll() { allBox.checked = state[f.key] === allOf(f); }
+
+  return [grid, allLabel];
+}
+
+const form = document.getElementById("form");
+for (const f of FIELDS) {
+  const card = document.createElement("div");
+  card.className = "card";
+
+  const head = document.createElement("div");
+  head.className = "head";
+  const title = document.createElement("h2");
+  title.textContent = f.label;
+  const tag = document.createElement("span");
+  tag.className = "tag";
+  tags[f.key] = tag;
+  head.append(title, tag);
+  card.appendChild(head);
+
+  if (f.type === "fixed") {
+    state[f.key] = f.value;
+    const note = document.createElement("div");
+    note.className = "fixed";
+    note.textContent = hex(f.value) + "  Default (fixed)";
+    card.appendChild(note);
+  } else {
+    card.append(...(f.type === "select" ? buildSelect(f) : buildFlags(f)));
+  }
+  form.appendChild(card);
+}
+
+// Neither file:// nor content:// (what Android uses when a file manager opens
+// this page) is a secure context, so navigator.clipboard is missing there.
+// Fall back to execCommand on the output field, and if that also fails, leave the
+// code selected so the user can copy it from the long-press menu.
+function copyText() {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(out.value).catch(execCopy);
+  }
+  return execCopy();
+}
+
+// A hidden textarea is ignored by most mobile browsers, so copy from the visible
+// one. iOS also ignores a selection in a read-only field, hence the toggle.
+function execCopy() {
+  out.readOnly = false;
+  selectOutput();
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  out.readOnly = true;
+  return ok ? Promise.resolve() : Promise.reject();
+}
+
+function selectOutput() {
+  out.focus({ preventScroll: true });
+  out.setSelectionRange(0, out.value.length);
+}
+
+// Tapping the code selects all of it, so a long-press menu copies every line.
+out.addEventListener("focus", () => out.setSelectionRange(0, out.value.length));
+
+const copyBtn = document.getElementById("copy");
+const hint = document.getElementById("hint");
+copyBtn.addEventListener("click", () => {
+  function flash(msg, ms) {
+    copyBtn.textContent = msg;
+    setTimeout(() => {
+      copyBtn.textContent = "Copy code";
+      copyBtn.classList.remove("done");
+    }, ms || 1500);
+  }
+  copyText()
+    .then(() => {
+      out.blur();
+      hint.textContent = "";
+      copyBtn.classList.add("done");
+      flash("Copied!");
+    })
+    .catch(() => {
+      selectOutput();
+      hint.textContent = "Copy blocked here. The code is selected \u2014 long-press it and tap Copy.";
+      flash("Long-press to copy", 3000);
     });
+});
 
-    // สร้างครั้งแรกตอนโหลดหน้า
-    generate();
-  </script>
+document.getElementById("reset").addEventListener("click", () => {
+  form.querySelectorAll("input[type=checkbox]").forEach(b => { b.checked = false; });
+  form.querySelectorAll("select").forEach(s => { s.selectedIndex = 0; });
+  for (const f of FIELDS) {
+    if (f.type === "flags") state[f.key] = f.base;
+    else if (f.type === "select") state[f.key] = f.options[0].v;
+  }
+  hint.textContent = "";
+  update();
+});
+
+update();
+</script>
 
 </body>
 </html>
