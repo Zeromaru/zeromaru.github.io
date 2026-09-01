@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farm Planner</title>
+<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAYYxBKlBCEhDlKpSGllGNrzim1pVpz7yHGvYzn3q3378b//96t/2MAAAAAAACzpX6tAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAHlJREFUGJVVjQsSgzAIRIEsSETuf91CjLVlZgn7+ISIyIDKgNEKFs8EIdOFFxF4ekuE9gzDYeC7X7tVgjutW2SeZalkabd363mzKpuIsAyGjnr31THPOUu6P9EZV0TpIXrG1RGnfjdi+TnoJfHjixx1VF+/0J9t8hQfGOAD1E9MgiAAAAAASUVORK5CYII=">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --bg:#F1F3E6;
+    --panel:#FBFCF3;
+    --panel2:#EBEEDC;
+    --ink:#26301F;
+    --muted:#6B7360;
+    --line:#D5DAC0;
+    --accent:#3F7D45;
+    --accent-ink:#FFFFFF;
+    --accent2:#C25438;
+    --code-bg:#232A1D;
+    --code-ink:#D7E4C3;
+    --warn-bg:#F6EBD2;
+    --warn-line:#D9C08A;
+    --cell-empty:#E3E7D2;
+    --cell-line:#C9CFB2;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15130D;
+      --panel:#1F1C13;
+      --panel2:#282417;
+      --ink:#EDE8D6;
+      --muted:#9A937D;
+      --line:#3B3626;
+      --accent:#6FBF74;
+      --accent-ink:#10200F;
+      --accent2:#E07B5F;
+      --code-bg:#10140B;
+      --code-ink:#C2D4A6;
+      --warn-bg:#2E2716;
+      --warn-line:#6B5A2E;
+      --cell-empty:#2B2819;
+      --cell-line:#3D3927;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15130D;
+    --panel:#1F1C13;
+    --panel2:#282417;
+    --ink:#EDE8D6;
+    --muted:#9A937D;
+    --line:#3B3626;
+    --accent:#6FBF74;
+    --accent-ink:#10200F;
+    --accent2:#E07B5F;
+    --code-bg:#10140B;
+    --code-ink:#C2D4A6;
+    --warn-bg:#2E2716;
+    --warn-line:#6B5A2E;
+    --cell-empty:#2B2819;
+    --cell-line:#3D3927;
+  }
+  *{box-sizing:border-box}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    font-size:14px;
+    line-height:1.55;
+    margin:0;
+    padding:20px 24px 48px;
+  }
+  h1,h2,h3{font-family:"Chakra Petch","IBM Plex Sans",sans-serif;text-wrap:balance;margin:0}
+  header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  header h1{font-size:26px;letter-spacing:.02em}
+  header .sub{color:var(--muted)}
+  .layout{display:flex;gap:18px;align-items:flex-start;margin-top:14px;flex-wrap:wrap}
+  .palette{
+    flex:0 0 250px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px;
+    display:flex;flex-direction:column;gap:14px;
+    max-height:80vh;overflow-y:auto;
+    position:sticky;top:12px;
+  }
+  .center{flex:1 1 640px;min-width:0;display:flex;flex-direction:column;gap:16px}
+  .group h3{
+    font-size:12px;text-transform:uppercase;letter-spacing:.09em;
+    color:var(--muted);margin-bottom:8px;
+  }
+  .swatches{display:flex;flex-wrap:wrap;gap:5px}
+  .sw{
+    display:flex;align-items:center;gap:7px;
+    border:1px solid var(--line);
+    background:var(--panel2);
+    color:var(--ink);
+    border-radius:7px;
+    padding:4px 8px 4px 5px;
+    font:inherit;font-size:12.5px;
+    cursor:pointer;
+  }
+  .sw:hover{border-color:var(--accent)}
+  .sw:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+  .sw.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent);background:var(--panel)}
+  .sw .chip{
+    width:20px;height:20px;border-radius:4px;flex:none;
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;line-height:1;
+    border:1px solid rgba(0,0,0,.18);
+  }
+  .stage{
+    display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:9px;
+  }
+  .stage button{
+    flex:1;border:0;padding:6px 4px;font:inherit;font-size:12.5px;
+    background:var(--panel2);color:var(--muted);cursor:pointer;
+  }
+  .stage button.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
+  .toolrow{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--ink);
+    font:inherit;font-size:13px;
+    border-radius:8px;
+    padding:7px 13px;
+    cursor:pointer;
+  }
+  .btn:hover{border-color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+  .btn.danger{color:var(--accent2);border-color:var(--accent2)}
+  .btn.on{background:var(--accent2);border-color:var(--accent2);color:#fff;font-weight:600}
+  .gridwrap{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+  }
+  .gridscroll{overflow-x:auto;padding-bottom:4px}
+  table.farm{border-collapse:collapse;font-family:"IBM Plex Mono",monospace}
+  table.farm th{
+    font-size:9px;font-weight:500;color:var(--muted);
+    padding:0 2px 3px;min-width:22px;text-align:center;
+    font-variant-numeric:tabular-nums;
+  }
+  table.farm th.rh{padding:0 6px 0 0;text-align:right}
+  td.cell{
+    width:22px;height:22px;min-width:22px;
+    border:1px solid var(--cell-line);
+    background:var(--cell-empty);
+    text-align:center;vertical-align:middle;
+    font-size:12px;line-height:1;
+    cursor:crosshair;
+    padding:0;
+    user-select:none;
+  }
+  td.cell .dot{
+    display:inline-block;width:7px;height:7px;border-radius:50%;
+    border:1px solid rgba(0,0,0,.35);
+  }
+  td.cell img,.sw .chip img{
+    width:16px;height:16px;image-rendering:pixelated;
+    display:inline-block;vertical-align:middle;
+  }
+  .statusbar{
+    margin-top:8px;display:flex;gap:16px;flex-wrap:wrap;
+    font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);
+    font-variant-numeric:tabular-nums;
+  }
+  .statusbar b{color:var(--ink);font-weight:500}
+  .codes{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px;
+  }
+  .codes h2{font-size:16px;margin-bottom:4px}
+  .codes .meta{color:var(--muted);font-size:12.5px;margin:0 0 10px}
+  textarea#out,textarea#importIn{
+    width:100%;height:230px;
+    background:var(--code-bg);color:var(--code-ink);
+    border:1px solid var(--line);border-radius:8px;
+    font-family:"IBM Plex Mono",monospace;font-size:12.5px;line-height:1.5;
+    padding:10px;resize:vertical;
+  }
+  .note{
+    background:var(--warn-bg);
+    border:1px solid var(--warn-line);
+    border-radius:10px;
+    padding:12px 14px;
+    font-size:13px;
+    max-width:72ch;
+  }
+  .note b{font-weight:600}
+  details.adv{font-size:13px}
+  details.adv summary{cursor:pointer;color:var(--muted)}
+  .adv .row{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  .adv label{color:var(--muted)}
+  .adv input{
+    font-family:"IBM Plex Mono",monospace;font-size:13px;
+    background:var(--panel2);color:var(--ink);
+    border:1px solid var(--line);border-radius:6px;padding:4px 8px;width:110px;
+  }
+  @media (prefers-reduced-motion: no-preference){
+    .sw,.btn{transition:border-color .12s, box-shadow .12s}
+  }
+</style>
+
+<header>
+  <h1>🌾 Farm Planner</h1>
+  <span class="sub">Plan the 43×25 farm and generate cheat codes (Harvest Moon: MFoMT)</span>
+</header>
+
+<div class="layout">
+  <aside class="palette" id="palette"></aside>
+
+  <div class="center">
+    <div class="toolrow">
+      <button class="btn" id="eraser" title="Eraser mode — sets a cell to empty so no code is generated for it (right-click does the same)">🧽 Eraser</button>
+      <button class="btn" id="fillAll">🪣 Fill all with selection</button>
+      <button class="btn" id="fillEmpty">🫗 Fill empty cells with selection</button>
+      <button class="btn" id="eraseSel" title="Empties every cell that currently holds the selected tile (for a crop: the selected stage only)">🧹 Erase selection everywhere</button>
+      <button class="btn danger" id="clearAll">Clear all</button>
+      <span class="sub" style="font-size:12.5px;color:var(--muted)">Click/drag to paint · right-click to empty a cell</span>
+    </div>
+
+    <div class="gridwrap">
+      <div class="gridscroll" id="gridscroll"></div>
+      <div class="statusbar">
+        <span>Cell: <b id="stPos">–</b></span>
+        <span>Address: <b id="stAddr">–</b></span>
+        <span>Value: <b id="stVal">–</b></span>
+        <span><b id="stCount">0</b> cells set</span>
+      </div>
+    </div>
+
+    <div class="codes">
+      <h2>Generated codes</h2>
+      <p class="meta">Two lines per cell (tile value + group value), 16-bit write format: <code>82XXXXXX VVVV</code> — painted cells only</p>
+      <div class="toolrow" style="margin-bottom:10px">
+        <button class="btn primary" id="copy">Copy all codes</button>
+        <span id="copyMsg" style="color:var(--accent);font-size:13px"></span>
+      </div>
+      <textarea id="out" readonly spellcheck="false"></textarea>
+      <details class="adv" style="margin-top:12px">
+        <summary>Import from CodeBreaker codes</summary>
+        <p class="meta" style="margin-top:8px">Paste <code>82XXXXXX VVVV</code> lines — tile values are read back onto the grid. Lines that are not codes are ignored.</p>
+        <textarea id="importIn" spellcheck="false" style="height:120px" placeholder="820057F8 9515&#10;820057FA 0000&#10;..."></textarea>
+        <div class="toolrow" style="margin-top:8px">
+          <button class="btn" id="importBtn">Import</button>
+          <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--muted)">
+            <input type="checkbox" id="importClear"> Clear grid first
+          </label>
+          <span id="importMsg" style="font-size:12.5px;color:var(--muted)"></span>
+        </div>
+      </details>
+    </div>
+
+    <div class="note">
+      <b>About the addresses:</b> the whole map is one contiguous block starting at (1,1) = <code>820057F8</code>, 4 bytes per cell in row-major order
+      (verified against every entry in farm.txt, up to (43,25) = <code>820068C0</code>).
+      <details class="adv">
+        <summary>Base address setting</summary>
+        <div class="row">
+          <label for="baseAddr">(1,1) base</label><input id="baseAddr" value="820057F8">
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const COLS = 43, ROWS = 25;
+  const SOIL_BG = '#8a6a45';
+
+  // 16x16 item sprites taken from recipes.html (data URIs)
+  const SPRITES = {
+    "grass-snow": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAABCklEQVR4AaSSoRLCMBBEDxwSBxJZWWQlEhyWz0CCBMknIEHiQCIrqaysRCIrS1+mN5NwAUOG5ZLN7etMr/3mz9WXyNoWK8kuU9HKPtLmLAMgNJgMZTZJhLqYZW7/DWIA96qUunq5MJXH4BVlwdbIAPLlQwgQpl7vuRCuN40JYxgAJpDD7SzHcui0zhPsqKIAOgmd8qegVTaWwb6HbRQFuBe2S0U6neYjSZM0CjEAwjoBpoCkXXgxiAHQqKE253565g6IM7u/AMDTO/9n8d9HANAUI9Q9Vc+MlbOvAMC8tYmQioD69HBWBQA+Fhr4Bgj4wkcE6aOiAIDBJaLZl3/HXmUAegHkU3rn1zcAAAD//22WSyIAAAAGSURBVAMAyojX4VnArgIAAAAASUVORK5CYII=",
+    "branch":"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBjWlpzc3OUlJStta3Gzsbe59b///97Ugi9hBD//wDnnCH31gD/77VSOQjn9+/tzP1/AAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFxJREFUGJVtj1EOwCAIQ/2kaeH+xx0sLoKZfvVJW1zr55AYGtIABjmta1AOHmAglbcRo+T+kZx3gS5uks8sW0LbjogC1XVVyXXao0wZ08mb1RaMDIXF+MLUVVeGB1PjBLbTTt36AAAAAElFTkSuQmCC",
+    "grass": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wCE72t7zlo5rTEIhADWhEJ7SikAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAbrxamAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAE5JREFUGJVtjUEKADEIA9VE///k1S6FCM1thhjNngkEoOzhHmIwBjQ1WGzGzFqiqnKfdOSoR/uLmOFjtKCVXvj5Cp7N4TtCAoPymFyo+QCGewEbZ1mrIgAAAABJRU5ErkJggg==",
+    "lumber": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBjWlpzc3OUlJStta3Gzsbe59b///97Ugi9hBD//wDnnCH31gD/77VSOQjn9+/tzP1/AAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGBJREFUGJVtjFEOwDAIQvsJQb3/cae1S10ykjbhCaz1K1lKw7rZQNu7m/wQmqtQftwAuSCvltAA6gUhDiBB5bsgQwWiK9EBZqMTkfdqCBigUow7yjrjbBTZk6/fKKb96AFvJgZGv47S+AAAAABJRU5ErkJggg==",
+    "golden-lumber": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBjWlpzc3OUlJStta3Gzsbe59b///97Ugi9hBD//wDnnCH31gD/77VSOQjn9+/tzP1/AAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFRJREFUGJWVj0sKADEMQrML5nP/604+TelAN3XnQxSJrlIL6WGFmV0GqTin3EUXaM8DYBlJb2gQHSVTTMIC5c4GHoW/RBY8gVgpP4CA/gLsNyjdj39AaQYlFw38TQAAAABJRU5ErkJggg==",
+    "turnip": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAYYxBKlBCEhDlKpSGllGNrzim1pVpz7yHGvYzn3q3378b//96t/2MAAAAAAACzpX6tAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAHlJREFUGJVVjQsSgzAIRIEsSETuf91CjLVlZgn7+ISIyIDKgNEKFs8EIdOFFxF4ekuE9gzDYeC7X7tVgjutW2SeZalkabd363mzKpuIsAyGjnr31THPOUu6P9EZV0TpIXrG1RGnfjdi+TnoJfHjixx1VF+/0J9t8hQfGOAD1E9MgiAAAAAASUVORK5CYII=",
+    "potato": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBKShhaUiFzWhiEayGMeymllCGtnCmllCm9pTHGrSHevTHezjkAAAAAAAAAAAA0rw0rAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGNJREFUGJWNj0kSgDAIBCUsYfv/ewVN1KNUcZiuAYbj+Fk8RYhfqRYRPvmjtdrl8Ud2h90WaGGRmWsIWLxlA13APKNGNsAm6uGmdC0ZRZinm+y75SGsbDSeaAORCn7DA8DPN0/y+ANcrrKzvwAAAABJRU5ErkJggg==",
+    "cucumber": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAAAAIOQgIWhgIaxgAlAgQjCEAvQgY1jkY70IAAAAAAAAAAAAAAAAAAAAAAACOpUhXAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAD9JREFUGJVlj0EKADAIw6Rj1f3/w4PtZOzNEFqM+FnRwztEwQY4BFWdKItKYmeVO5Fz1ILIo/ZMBUvanNb78AJ4BwEGKbx92QAAAABJRU5ErkJggg==",
+    "strawberry": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBjCAB7EACtCAApewCEQgjnIQA5pQj/KQhrzgjvUhBa7xj/jDH/tYQAAAAAAABKuwqTAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFdJREFUGJWdjUEOwCAIBIVFEdT/f7eQNI311u5tJgtbys/IG901jejN6MuGqsqaSObmU02GKbxxCEIYgZhUgLJCxLW6xwHR8xfBHdsQYzbwPs0Hhzn4Qy4QjAHUsn3m8QAAAABJRU5ErkJggg==",
+    "cabbage": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBSWjkYYxBCjCGEhDlKlBBKpSFaxghrzinv3qVz7yHWzgD//++t/2PWxpQAAAAL/ukgAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGNJREFUGJWVjQkKRDEMQlMEFSH3v+5P2gvMGLr4slX9orhCzpXnnZhxaF8yf3qONC8XrE+3ewgWaGvTE7qgCK4dqOslWK/AUBUUzMDbQEQFCIfeQTzcpsnjYPV8LcJZvR3/6wNUlQPnFYsVegAAAABJRU5ErkJggg==",
+    "tomato": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBzIQBShBjGIQClIQAxUhBSrRAAAAAAAADvQgD/exD/nEr/1r0AAAAAAAAAAAAtWDZnAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFJJREFUGJWdj0kOwCAMAwEbJMv8/711VVA5k9tMrCyl3BYBHgi1ofYr2KNHibs/Rye7vTKURcnTK1Ihh2yhrg1pBzPjE4lESdgckzNw8KtS1189MVQCLoDTGGAAAAAASUVORK5CYII=",
+    "corn": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wApAHMAWimthAAxjCExtSnWpQBjxikx3jn/zgBz7zH/92PG5xD/51oAAAAAAACBQnzfAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGxJREFUGJVljUEOxCAMA1Gw04SK/393nQLbQ8MBZmKL1j4T+/b09eDVKJz3zH4MKM47fRlciJw6foRxePGpwCJ8ak1yi0EXjyCshCG61iMWSpC9mJsbCDJerl946quiCEwDbGEPVvZv7M1/5gfP0gLvqN/CIgAAAABJRU5ErkJggg==",
+    "onion": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBjMQB7MQClOQDOWgDnYwD/exD/rWsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA3c6jKAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFBJREFUGJWNj0EKADEMApuq8f8/3sCSJUsvtSeHjpC1LgP8OyHs2cXkIFSmNQhlpVO9A9rV04gGJbg+NYjaKEXa8TmU5mgEWK+NF1VurzryAMqzAWve6Cr4AAAAAElFTkSuQmCC",
+    "pumpkin": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wA5MRAxWhBKUhhKaxhjlCG9hABztSmU3jGtnADn1gj/7xgAAAAAAAAAAAAAAABjdbAAAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGhJREFUGJWNjlEKgDAMQ9cmsZve/762biL+iGEM8niEtvYrJPLhqaIN5L+QC8A+EOLVUfp2HIOcChCd3HZCcwbsASmXQjZBKKXwhBfwmleXQ25zlfTSQW8LwOoULCGJmdPN7l6xd/3MCTJOAgjHXTtyAAAAAElFTkSuQmCC",
+    "pinepple": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAMRAAWilzSgAAWikxjCExtSmthAC1YwDWtTH31jn/51r/92MxtSkAAAAAAACmrCXGAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGZJREFUGJVVjQkOxDAIA0HgcDT/f29daZWwTiQYc4n8tORfCyfFWgJxJtfCUoePftJkgHXoZXFXhWeMGbhmdAzLrLp2HceS9L1jBOu9OXWMevjHFovYHdU5lnSww+6ZjIrB32GK8QU1ogLYLUs3HwAAAABJRU5ErkJggg==",
+    "eggplant": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBKMWsxKWNKMUJKKXtSMVJSMYRrOVpjOaV7SsaEUsaMY8aUa8ate9bGjPcYECGuA9d8AAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGdJREFUGJVdjlEOwCAIQzFOUobI/W873DKH44PQl1IgImr0q9rqrqu3zVQd3pBAcYFrIgXaoeAMzHqQhVhtmOm5TIfYGGOStWOPRTiFbIDjTg/9AmKITr1Sw4KQKN8rhZmj5f+j7uEC+c0EBTemNhAAAAAASUVORK5CYII=",
+    "carrot": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAKQgAYxhCawgArTkAziEAcyEAAAAIhCm1SgDeawD/jAj/tUr/3oxzKQAAAAD95Ri+AAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGZJREFUGJVVzNsOgDAIA9CC8MBF//9zrbqpWzKSnhQAwO35411JOe0lU2VUkU9EhYYhbmq+Kf43WJCMmOLmzNUZM3Mw753vChDdtddTuc9FZdesYAgp/pK1Vu6tBRAsxSJH5AqkAyde/AL1jAYrIQAAAABJRU5ErkJggg==",
+    "sweet-potato": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBzADm1AGPvEJT/Qr3OCHsAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABSiXFLAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAEhJREFUGJVlz0ESACEIA0FJ4P9fNuxlIXLsGrQ45xnApcoINIpici2iMjkjgbaGBJhtP+gVEWeiYCf4Giyp9VET/AiZXxUOPReOsgEAuVErIgAAAABJRU5ErkJggg==",
+    "spinach": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAIOQgQShAQYxBSShgYcxgYjBghnCFreykxtSFzpTEx1iFK3ilj70oAAAAAAADA0OWmAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAHhJREFUGJVVjlsCwkAIA9NFElPW+19X2mpd+cswPIC7HCjymwQXwRxHKHebUnKL7XTFUtssngJKwaqgL9Bq5qAZ5SEglSrHUAMeAIhwVWfa43Mz05boeX+BXtrSAtB7rKkfAOUpL0Sd/Kdoer6MdWjOfV8B9ucDeAM44QQH+kapIwAAAABJRU5ErkJggg==",
+    "green-pepper": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAGAgQORAhWhgxhClCpTFSxjlj70oAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANImNqAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGFJREFUGJVtj9sOwCAIQ7U3//+Ph5mauIz44qEt0NpvybiBBwHx/IGEsbaMVkZYzwuUmqKyTLDlRNgeaLwe7ZDKgOJpW0OKsHw8Y1CLTRnPJtWDLkCiEtjbRXgfxP45cNUDBxoB0IRVzGoAAAAASUVORK5CYII=",
+    "moon-drop-flower": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wB7EAAYSgjnIQApewCUYxA5nAhjvQhS1hBa7xj/jDHOvQD//wjv3gD//94AAABeawTjAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGxJREFUGJVdjQEOwyAMA6MqSiiO+f9z67JpwEBCyemMzcwI2w+H7g5A1AFG7yzmAsUOZcJ+P7GqYMlCto843hrFBu4JAphlXcoUIlKDS/gmRDQ52FaViHtkrG4t0bZdxyUd4Eo/jcv/M2+93gdf+APZaiu0PwAAAABJRU5ErkJggg==",
+    "pink-cat-flower": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wA5MRBCYxgYhAhjlCExpQC9hAClQoQpzjlztSlz7zHn1gj/pef/5+fna72U3jGagwjzAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGdJREFUGJWNjFEOwCAIQwlNAzHK/Y870Dn9XE2APooifxQRyMbsy48RhJAxeizQTZjPcpPeoscL5iRmVSmonVlFqkywxiVMMEVvzQUq1bkJody+EBUK8vsg09C8u7wTfoiz0lmuzNEDB/QDiLxWEb8AAAAASUVORK5CYII=",
+    "blue-magic-flower": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAABgAAHMAAM4ICP//nJyMAADWAAD/AAAAKQgAYxgArTkAziHGvSH//wAYpfdc6wpVAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGpJREFUGJVtj0sOwCAIBQXZ8Knc/7YFUWOTvt2MPgit/aZH8CJyp2MQk9Ns0RHJiULYrpc5gvoYmNxMp3B6RsxZIn7FY7RyZArNTq5EsASVmjKFaDOTWhTMwrq4AsKmwtc9rCrwuZDhyysvwBMDS02+MTgAAAAASUVORK5CYII=",
+    "red-magic-flower": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAAABgAAHMAAM4ICP//nJyMAADWAAD/AAAAKQgAYxgArTkAziHGvSH//wAYpfdc6wpVAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGpJREFUGJVtj0sOwCAIBWUB8qv3P25B1NikbzejD0Jrv+kRuogR+Rii5DRb9FDIHMJ3vcwR3Meg5OY2BfIzYs4S8Sseo5UjU1h2ciWBJ5jWlCnUmrvWomBRscUVUHFTue4RM4XPhQJfXnkBRRYEK2OuRcEAAAAASUVORK5CYII=",
+    "toy-flower": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wAICAgIOQjWIQAIWhgIaxgAlAgQjCHWxpQAvQgQrTH/9yH///8Y1jmMzgDv3q0o+R8JAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAFxJREFUGJVtj9sKwDAIQ6UQL6D4/387y2hXy/LmaRIr0Z/MbhIX0fRswEsNpF+OyujsDsZGXPCcCTN3hhjqur4VVUKynsTCpLbw55YxkOB309FarnbBUE8EUxfAD1FtAuAUtVnHAAAAAElFTkSuQmCC",
+    "weed": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUI/wgQSgAYYwAplAAppQApxgAp1gA5e0JKlDlarSljzjFz5wh79xC11jHWvTnv3lLucIcaAAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGBJREFUGJWdj1EOwDAIQhWQ+x95dG2y/exnRhOJ9FWr/gfBp5cLqSeiYGG8TSQgijzaGkIIAwfWnb7jG29Or3kIbHpui5IOIvNQtARsrCf7U6NotYtztkiyl5uv1b5vugCyNAF3Ufb27wAAAABJRU5ErkJggg==",
+    "stone": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAAMFBMVEUA/wBjWlpzc3OUlJStta3Gzsbe59b///97Ugi9hBD//wDnnCH31gD/77VSOQjn9+/tzP1/AAAAAXRSTlMAQObYZgAAAAlwSFlzAAALEwAACxMBAJqcGAAAAEdJREFUGJWdzkkSwCAIRFFphvsfWQSMmEUW6d1/VViO8XcswleqqjBam1kTXh2SjQMoeE4oAfXoBnKJgRKWxHa71NrXXvm5CbsHAVBlOOcaAAAAAElFTkSuQmCC",
+  };
+
+
+  // tile registry: id -> {x: XXXX, g: YYYY, label, bg, em(emoji), dot(seed dot color)}
+  const TILES = {};
+  const soilDefs = [
+    ['0000','Cleared ground','#b99b6f',''],
+    ['0001','Hoed ground','#8a6a45',''],
+    ['0002','Hoed & watered','#63492e',''],
+    ['0003','Snow','#eef2f5','❄'],
+    ['A453','Grass under snow','#ffffff','🌱','grass-snow'],
+  ];
+  soilDefs.forEach(function(d){
+    TILES['g'+d[0]] = {x:d[0], g:'0000', label:d[1], bg:d[2], em:d[3], img:d[4]};
+  });
+
+  const cropDefs = [
+    ['01','Turnip','⚪','#dfe3d2','turnip'],
+    ['05','Potato','🥔','#d9c391','potato'],
+    ['09','Cucumber','🥒','#bcd9a0','cucumber'],
+    ['0D','Strawberry','🍓','#e8b7b7','strawberry'],
+    ['11','Cabbage','🥬','#bfd9ac','cabbage'],
+    ['15','Tomato','🍅','#e8a898','tomato'],
+    ['19','Corn','🌽','#ead990','corn'],
+    ['1D','Onion','🧅','#e0cba6','onion'],
+    ['21','Pumpkin','🎃','#e8b878','pumpkin'],
+    ['25','Pineapple','🍍','#e3d386','pinepple'],
+    ['29','Eggplant','🍆','#cbb3d6','eggplant'],
+    ['2D','Carrot','🥕','#e8bb8e','carrot'],
+    ['31','Sweet potato','🍠','#d9ab9a','sweet-potato'],
+    ['35','Spinach','🍃','#b3d6ad','spinach'],
+    ['39','Green pepper','🫑','#b0d69e','green-pepper'],
+    ['3D','Moon drop','🌼','#ecdf9a','moon-drop-flower'],
+    ['41','Pink cat','🌸','#ecc6d6','pink-cat-flower'],
+    ['45','Blue magic','🪻','#b8c6e8','blue-magic-flower'],
+    ['49','Red magic','🌹','#e0a0a0','red-magic-flower'],
+    ['4D','Toy flower','🌷','#e6c2ad','toy-flower'],
+    ['51','Grass','🌾','#c6d69a','grass'],
+  ];
+  cropDefs.forEach(function(d){
+    TILES['c'+d[0]+'s'] = {x:'01'+d[0], g:'0000', label:d[1]+' (seeds)', bg:SOIL_BG, em:'', dot:d[3]};
+    TILES['c'+d[0]+'f'] = {x:'95'+d[0], g:'0000', label:d[1]+' (fully grown)', bg:d[3], em:d[2], img:d[4]};
+  });
+
+  const smallObsDefs = [
+    ['0854','Weeds','🌿','#a8b790','weed'],
+    ['0858','Small rock','🪨','#b5b3aa','stone'],
+    ['085C','Branches','🪵','#c2a583','branch'],
+    ['0860','Lumber','🟫','#a98a5e','lumber'],
+    ['0864','Rotten lumber','🍄','#9d9179',''],
+    ['0868','Gold lumber','⭐','#e3c75c','golden-lumber'],
+  ];
+  smallObsDefs.forEach(function(d){
+    TILES['o'+d[0]] = {x:d[0], g:'0002', label:d[1], bg:d[3], em:d[2], img:d[4]};
+  });
+
+  // 2x2 objects: base value = upper-left, corners +4 each (UL,UR,LL,LR)
+  const bigDefs = [
+    ['086C','Lv2 wood','🌳','#8f7a4e'],
+    ['087C','Lv2 stone','🗿','#a3a19a'],
+    ['088C','Lv3 stone','🗿','#7e7d78'],
+  ];
+  const BIG = {};
+  bigDefs.forEach(function(d){
+    const base = parseInt(d[0],16);
+    const corners = [];
+    for(let i=0;i<4;i++){
+      const v = (base + i*4).toString(16).toUpperCase().padStart(4,'0');
+      const cornerName = ['upper left','upper right','lower left','lower right'][i];
+      const id = 'b'+v;
+      TILES[id] = {x:v, g:'0002', label:d[1]+' ('+cornerName+')', bg:d[3], em:i===0?d[2]:'', big:{key:'B'+d[0], i:i}};
+      corners.push(id);
+    }
+    BIG['B'+d[0]] = {label:d[1]+' (2×2)', em:d[2], bg:d[3], corners:corners};
+  });
+
+  // ---- state ----
+  let cells = new Array(COLS*ROWS).fill(null); // tile id or null (null = no code)
+  let selected = 'g0000';      // current paint id
+  let selectedBig = null;
+  let selectedCrop = null;     // crop suffix when a crop swatch is chosen
+  let stage = 'f';             // 's' seed | 'f' full
+  let erasing = false;
+  let painting = false;
+
+  const idx = (c,r) => (r-1)*COLS + (c-1);
+
+  function loadState(){
+    try{
+      const raw = localStorage.getItem('hm-farm-planner');
+      if(!raw) return;
+      const s = JSON.parse(raw);
+      if(Array.isArray(s.cells) && s.cells.length === COLS*ROWS){
+        cells = s.cells.map(id => (id && TILES[id]) ? id : null);
+      }
+      if(s.base) document.getElementById('baseAddr').value = s.base;
+    }catch(e){}
+  }
+  function saveState(){
+    try{
+      localStorage.setItem('hm-farm-planner', JSON.stringify({
+        cells: cells,
+        base: document.getElementById('baseAddr').value,
+      }));
+    }catch(e){}
+  }
+
+  function addrOf(c,r){
+    const v = parseInt(document.getElementById('baseAddr').value,16);
+    return (isNaN(v) ? 0 : v) + ((r-1)*COLS + (c-1))*4;
+  }
+  const hex8 = n => n.toString(16).toUpperCase().padStart(8,'0');
+
+  // ---- palette ----
+  const pal = document.getElementById('palette');
+  function spriteImg(key){
+    if(!key || !SPRITES[key]) return null;
+    const im = document.createElement('img');
+    im.src = SPRITES[key];
+    im.alt = '';
+    return im;
+  }
+  function swatch(id, label, bg, em, dot, img){
+    const b = document.createElement('button');
+    b.className = 'sw';
+    b.dataset.pick = id;
+    const chip = document.createElement('span');
+    chip.className = 'chip';
+    chip.style.background = bg;
+    const im = spriteImg(img);
+    if(im) chip.appendChild(im);
+    else if(em) chip.textContent = em;
+    else if(dot){
+      const d = document.createElement('span');
+      d.className = 'dot';
+      d.style.background = dot;
+      chip.appendChild(d);
+    }
+    b.appendChild(chip);
+    b.appendChild(document.createTextNode(label));
+    return b;
+  }
+  function buildPalette(){
+    const gSoil = document.createElement('div');
+    gSoil.className = 'group';
+    gSoil.innerHTML = '<h3>Soil</h3>';
+    const sw1 = document.createElement('div'); sw1.className = 'swatches';
+    soilDefs.forEach(d => sw1.appendChild(swatch('g'+d[0], d[1], d[2], d[3], null, d[4])));
+    gSoil.appendChild(sw1);
+
+    const gCrop = document.createElement('div');
+    gCrop.className = 'group';
+    gCrop.innerHTML = '<h3>Crops</h3>';
+    const stageEl = document.createElement('div');
+    stageEl.className = 'stage';
+    stageEl.innerHTML = '<button data-stage="s">🌱 Seeds</button><button data-stage="f" class="on">🌾 Fully grown</button>';
+    gCrop.appendChild(stageEl);
+    const sw2 = document.createElement('div'); sw2.className = 'swatches';
+    cropDefs.forEach(d => sw2.appendChild(swatch('CROP'+d[0], d[1], d[3], d[2], null, d[4])));
+    gCrop.appendChild(sw2);
+
+    const gObs = document.createElement('div');
+    gObs.className = 'group';
+    gObs.innerHTML = '<h3>Obstacles</h3>';
+    const sw3 = document.createElement('div'); sw3.className = 'swatches';
+    smallObsDefs.forEach(d => sw3.appendChild(swatch('o'+d[0], d[1], d[3], d[2], null, d[4])));
+    gObs.appendChild(sw3);
+
+    const gBig = document.createElement('div');
+    gBig.className = 'group';
+    gBig.innerHTML = '<h3>2×2 objects (click the upper-left cell)</h3>';
+    const sw4 = document.createElement('div'); sw4.className = 'swatches';
+    bigDefs.forEach(d => sw4.appendChild(swatch('BIG'+d[0], d[1], d[3], d[2])));
+    gBig.appendChild(sw4);
+
+    pal.appendChild(gSoil); pal.appendChild(gCrop); pal.appendChild(gObs); pal.appendChild(gBig);
+
+    pal.addEventListener('click', function(ev){
+      const b = ev.target.closest('button');
+      if(!b) return;
+      if(b.dataset.stage){
+        stage = b.dataset.stage;
+        stageEl.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.stage===stage));
+        if(selectedCrop && selected && selected[0]==='c'){
+          selected = 'c'+selectedCrop+stage;
+        }
+        return;
+      }
+      const pick = b.dataset.pick;
+      if(!pick) return;
+      erasing = false; document.getElementById('eraser').classList.remove('on');
+      if(pick.startsWith('BIG')){
+        selectedBig = 'B'+pick.slice(3);
+        selected = null;
+      }else if(pick.startsWith('CROP')){
+        selectedCrop = pick.slice(4);
+        selected = 'c'+selectedCrop+stage;
+        selectedBig = null;
+      }else{
+        selected = pick;
+        selectedBig = null;
+      }
+      pal.querySelectorAll('.sw').forEach(x => x.classList.toggle('sel', x===b));
+    });
+    // default selection: cleared ground
+    pal.querySelector('[data-pick="g0000"]').classList.add('sel');
+  }
+
+  // ---- grid ----
+  const tds = new Array(COLS*ROWS);
+  function buildGrid(){
+    const tbl = document.createElement('table');
+    tbl.className = 'farm';
+    const head = document.createElement('tr');
+    head.appendChild(document.createElement('th'));
+    for(let c=1;c<=COLS;c++){
+      const th = document.createElement('th');
+      th.textContent = c;
+      head.appendChild(th);
+    }
+    tbl.appendChild(head);
+    for(let r=1;r<=ROWS;r++){
+      const tr = document.createElement('tr');
+      const rh = document.createElement('th');
+      rh.className = 'rh'; rh.textContent = r;
+      tr.appendChild(rh);
+      for(let c=1;c<=COLS;c++){
+        const td = document.createElement('td');
+        td.className = 'cell';
+        td.dataset.c = c; td.dataset.r = r;
+        tds[idx(c,r)] = td;
+        tr.appendChild(td);
+      }
+      tbl.appendChild(tr);
+    }
+    document.getElementById('gridscroll').appendChild(tbl);
+  }
+
+  function renderCell(c,r){
+    const td = tds[idx(c,r)];
+    const id = cells[idx(c,r)];
+    td.innerHTML = '';
+    if(!id){
+      td.style.background = '';
+      td.removeAttribute('title');
+      return;
+    }
+    const t = TILES[id];
+    td.style.background = t.bg;
+    const im = spriteImg(t.img);
+    if(im) td.appendChild(im);
+    else if(t.em) td.textContent = t.em;
+    else if(t.dot){
+      const d = document.createElement('span');
+      d.className = 'dot';
+      d.style.background = t.dot;
+      td.appendChild(d);
+    }
+    td.title = '('+c+','+r+') '+t.label;
+  }
+  function renderAll(){
+    for(let r=1;r<=ROWS;r++) for(let c=1;c<=COLS;c++) renderCell(c,r);
+    refreshOut();
+  }
+
+  function setCell(c,r,id){
+    cells[idx(c,r)] = id;
+    renderCell(c,r);
+  }
+  // erasing any corner of a 2x2 object removes the whole object
+  function eraseCell(c,r){
+    const id = cells[idx(c,r)];
+    const info = id && TILES[id].big;
+    if(!info){ setCell(c,r,null); return; }
+    const ulc = c - info.i%2, ulr = r - (info.i>>1);
+    const corners = BIG[info.key].corners;
+    for(let i=0;i<4;i++){
+      const cc = ulc + i%2, rr = ulr + (i>>1);
+      if(cc>=1 && cc<=COLS && rr>=1 && rr<=ROWS && cells[idx(cc,rr)]===corners[i]) setCell(cc,rr,null);
+    }
+  }
+  function applyAt(c,r){
+    if(erasing){ eraseCell(c,r); }
+    else if(selectedBig){
+      if(c>=COLS || r>=ROWS) return; // 2x2 must fit
+      const corners = BIG[selectedBig].corners;
+      setCell(c,r,corners[0]); setCell(c+1,r,corners[1]);
+      setCell(c,r+1,corners[2]); setCell(c+1,r+1,corners[3]);
+    }
+    else if(selected){ setCell(c,r,selected); }
+    refreshOutSoon();
+  }
+
+  const gridscroll = document.getElementById('gridscroll');
+  gridscroll.addEventListener('mousedown', function(ev){
+    const td = ev.target.closest('td.cell');
+    if(!td) return;
+    ev.preventDefault();
+    const c = +td.dataset.c, r = +td.dataset.r;
+    if(ev.button === 2){ eraseCell(c,r); refreshOutSoon(); saveState(); return; }
+    painting = true;
+    applyAt(c,r);
+  });
+  gridscroll.addEventListener('mouseover', function(ev){
+    const td = ev.target.closest('td.cell');
+    if(!td) return;
+    const c = +td.dataset.c, r = +td.dataset.r;
+    updateStatus(c,r);
+    if(painting) applyAt(c,r);
+  });
+  gridscroll.addEventListener('contextmenu', ev => ev.preventDefault());
+  window.addEventListener('mouseup', function(){
+    if(painting){ painting = false; saveState(); }
+  });
+
+  function updateStatus(c,r){
+    document.getElementById('stPos').textContent = '('+c+','+r+')';
+    document.getElementById('stAddr').textContent = hex8(addrOf(c,r));
+    const id = cells[idx(c,r)];
+    document.getElementById('stVal').textContent = id ? TILES[id].x+' — '+TILES[id].label : 'empty';
+  }
+
+  // ---- code output ----
+  const out = document.getElementById('out');
+  let outTimer = null;
+  function refreshOutSoon(){
+    clearTimeout(outTimer);
+    outTimer = setTimeout(refreshOut, 150);
+  }
+  function refreshOut(){
+    const lines = [];
+    let n = 0;
+    for(let r=1;r<=ROWS;r++){
+      for(let c=1;c<=COLS;c++){
+        const id = cells[idx(c,r)];
+        if(!id) continue;
+        const t = TILES[id];
+        const a = addrOf(c,r);
+        lines.push(hex8(a)+' '+t.x);
+        lines.push(hex8(a+2)+' '+t.g);
+        n++;
+      }
+    }
+    out.value = lines.join('\n');
+    document.getElementById('stCount').textContent = n;
+  }
+
+  document.getElementById('copy').addEventListener('click', function(){
+    const msg = document.getElementById('copyMsg');
+    function done(ok){
+      msg.textContent = ok ? 'Copied ✓' : 'Copy failed — select the text and press Cmd+C';
+      setTimeout(() => { msg.textContent = ''; }, 3000);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(out.value).then(() => done(true), function(){
+        out.select(); done(document.execCommand('copy'));
+      });
+    }else{
+      out.select(); done(document.execCommand('copy'));
+    }
+  });
+
+  // ---- import from CodeBreaker codes ----
+  const VALUE2ID = {};
+  Object.keys(TILES).forEach(function(id){ VALUE2ID[TILES[id].x] = id; });
+  document.getElementById('importBtn').addEventListener('click', function(){
+    const base = parseInt(document.getElementById('baseAddr').value,16);
+    const msg = document.getElementById('importMsg');
+    if(isNaN(base)){ msg.textContent = 'Invalid base address'; return; }
+    const mem = {};
+    let codeLines = 0;
+    document.getElementById('importIn').value.split(/\r?\n/).forEach(function(line){
+      const m = line.trim().match(/^([0-9A-Fa-f]{8})[\s:]+([0-9A-Fa-f]{4})$/);
+      if(!m) return;
+      codeLines++;
+      mem[parseInt(m[1],16)] = m[2].toUpperCase();
+    });
+    if(codeLines === 0){ msg.textContent = 'No codes found'; return; }
+    if(document.getElementById('importClear').checked) cells.fill(null);
+    let applied = 0, unknown = 0, outside = 0;
+    Object.keys(mem).forEach(function(k){
+      const a = +k;
+      const off = a - base;
+      if(off < 0 || off >= COLS*ROWS*4 || off % 2 !== 0){ outside++; return; }
+      if(off % 4 === 2) return; // YYYY (group) line — the XXXX line carries the tile
+      const id = VALUE2ID[mem[a]];
+      if(!id){ unknown++; return; }
+      cells[off/4] = id;
+      applied++;
+    });
+    renderAll(); saveState();
+    let parts = [applied+' tiles imported'];
+    if(unknown) parts.push(unknown+' unknown values skipped');
+    if(outside) parts.push(outside+' addresses outside the map');
+    msg.textContent = parts.join(', ');
+  });
+
+  document.getElementById('eraser').addEventListener('click', function(){
+    erasing = !erasing;
+    this.classList.toggle('on', erasing);
+  });
+  document.getElementById('fillAll').addEventListener('click', function(){
+    if(!selected){ return; }
+    for(let r=1;r<=ROWS;r++) for(let c=1;c<=COLS;c++) cells[idx(c,r)] = selected;
+    renderAll(); saveState();
+  });
+  document.getElementById('fillEmpty').addEventListener('click', function(){
+    if(!selected){ return; }
+    for(let i=0;i<cells.length;i++) if(!cells[i]) cells[i] = selected;
+    renderAll(); saveState();
+  });
+  document.getElementById('eraseSel').addEventListener('click', function(){
+    let targets;
+    if(selectedBig) targets = new Set(BIG[selectedBig].corners);
+    else if(selected) targets = new Set([selected]);
+    else return;
+    for(let i=0;i<cells.length;i++) if(targets.has(cells[i])) cells[i] = null;
+    renderAll(); saveState();
+  });
+  document.getElementById('clearAll').addEventListener('click', function(){
+    if(!confirm('Clear the whole plan?')) return;
+    cells.fill(null);
+    renderAll(); saveState();
+  });
+  document.getElementById('baseAddr').addEventListener('input', function(){
+    refreshOutSoon(); saveState();
+  });
+
+  buildPalette();
+  buildGrid();
+  loadState();
+  renderAll();
+})();
+</script>
+</html>
