@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>House Upgrade Code Generator - MFoMT</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 700px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #f7f7f7;
+    }
+    h2 { margin-top: 0; }
+    .section {
+      background: white;
+      padding: 15px 20px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    label { display: block; margin: 6px 0; cursor: pointer; }
+    select {
+      padding: 8px 12px;
+      font-size: 15px;
+    }
+    #result {
+      background: #222;
+      color: #0f0;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 16px;
+      white-space: pre;
+      margin-top: 15px;
+      min-height: 70px;
+    }
+    #copyBtn {
+      margin-top: 10px;
+      padding: 10px 18px;
+      font-size: 15px;
+      color: white;
+      background: #2f7d32;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    #copyBtn:hover { background: #276b2a; }
+    #copyBtn.copied { background: #555; }
+  </style>
+</head>
+<body>
+
+  <h2>House Upgrade Code Generator</h2>
+  <p>สำหรับ Harvest Moon: More Friends of Mineral Town</p>
+
+  <div class="section">
+    <h3>ส่วนขยายบ้าน</h3>
+    <select id="uu">
+      <option value="00">00 - บ้านปกติ</option>
+      <option value="01">01 - ขยายครั้งที่ 1</option>
+      <option value="02">02 - ขยายครั้งที่ 2</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <h3>ของในบ้าน</h3>
+    <label><input type="checkbox" class="vv" value="01"> ห้องน้ำ</label>
+    <label><input type="checkbox" class="vv" value="02"> ตู้เย็น</label>
+    <label><input type="checkbox" class="vv" value="04"> ตู้เก็บของ</label>
+    <label><input type="checkbox" class="vv" value="08"> เครื่องเล่นเพลง</label>
+    <label><input type="checkbox" class="vv" value="10"> เตียงใหญ่</label>
+    <label><input type="checkbox" class="vv" value="20"> พรม</label>
+    <label><input type="checkbox" class="vv" value="40"> แจกัน</label>
+  </div>
+
+  <div class="section">
+    <h3>ของตกแต่ง</h3>
+    <label><input type="checkbox" class="xx" value="08"> กระจก</label>
+    <label><input type="checkbox" class="xx" value="10"> นาฬิกา</label>
+    <label><input type="checkbox" class="xx" value="20"> ถุงเท้า</label>
+  </div>
+
+  <div class="section">
+    <h3>สถานะพิเศษ</h3>
+    <select id="yy">
+      <option value="1A">1A - ปกติ</option>
+      <option value="3A">3A - มีของในถุงเท้า</option>
+      <option value="5A">5A - เตาผิงมีไฟ</option>
+      <option value="9A">9A - ครัว</option>
+    </select>
+  </div>
+
+  <div class="section">
+    <h3>อุปกรณ์ครัว</h3>
+    <label><input type="checkbox" class="zz" value="01"> มีด</label>
+    <label><input type="checkbox" class="zz" value="02"> กระทะ</label>
+    <label><input type="checkbox" class="zz" value="04"> หม้อ</label>
+    <label><input type="checkbox" class="zz" value="08"> เครื่องปั่น</label>
+    <label><input type="checkbox" class="zz" value="10"> ที่ตีไข่</label>
+    <label><input type="checkbox" class="zz" value="20"> ไม้นวดแป้ง</label>
+    <label><input type="checkbox" class="zz" value="40"> เตาอบ</label>
+    <label><input type="checkbox" class="zz" value="80"> ชุดเครื่องปรุง</label>
+  </div>
+
+  <div id="result">กำลังสร้างสูตร...</div>
+  <button id="copyBtn" type="button">คัดลอกโค้ด</button>
+
+  <script>
+    function generate() {
+      // UU
+      let uu = document.getElementById("uu").value;
+
+      // VV
+      let vv = 0;
+      document.querySelectorAll(".vv:checked").forEach(el => {
+        vv |= parseInt(el.value, 16);
+      });
+      let vvHex = vv.toString(16).toUpperCase().padStart(2, "0");
+
+      // XX (เริ่มจาก 81)
+      let xx = 0x81;
+      document.querySelectorAll(".xx:checked").forEach(el => {
+        xx |= parseInt(el.value, 16);
+      });
+      let xxHex = xx.toString(16).toUpperCase().padStart(2, "0");
+
+      // WW ใช้ค่า default
+      let ww = "35";
+
+      // YY
+      let yy = document.getElementById("yy").value;
+
+      // ZZ
+      let zz = 0;
+      document.querySelectorAll(".zz:checked").forEach(el => {
+        zz |= parseInt(el.value, 16);
+      });
+      let zzHex = zz.toString(16).toUpperCase().padStart(2, "0");
+
+      // สร้างโค้ด
+      let code = 
+        `82005000 ${vvHex}${uu}\n` +
+        `82005002 ${xxHex}${ww}\n` +
+        `82005004 ${zzHex}${yy}`;
+
+      document.getElementById("result").textContent = code;
+    }
+
+    // ปุ่มคัดลอกโค้ด
+    const copyBtn = document.getElementById("copyBtn");
+
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        return navigator.clipboard.writeText(text);
+      }
+      // fallback สำหรับตอนเปิดไฟล์ตรงๆ (file://)
+      return new Promise((resolve, reject) => {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.select();
+        const ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        ok ? resolve() : reject();
+      });
+    }
+
+    copyBtn.addEventListener("click", () => {
+      const text = document.getElementById("result").textContent;
+      copyText(text).then(() => {
+        copyBtn.textContent = "คัดลอกแล้ว!";
+        copyBtn.classList.add("copied");
+        setTimeout(() => {
+          copyBtn.textContent = "คัดลอกโค้ด";
+          copyBtn.classList.remove("copied");
+        }, 1500);
+      }).catch(() => {
+        copyBtn.textContent = "คัดลอกไม่สำเร็จ";
+        setTimeout(() => { copyBtn.textContent = "คัดลอกโค้ด"; }, 1500);
+      });
+    });
+
+    // ผูก event ให้ทุก input
+    document.querySelectorAll("input, select").forEach(el => {
+      el.addEventListener("change", generate);
+    });
+
+    // สร้างครั้งแรกตอนโหลดหน้า
+    generate();
+  </script>
+
+</body>
+</html>
