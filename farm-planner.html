@@ -133,6 +133,21 @@
   .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
   .btn.danger{color:var(--accent2);border-color:var(--accent2)}
   .btn.on{background:var(--accent2);border-color:var(--accent2);color:#fff;font-weight:600}
+  .menuwrap{position:relative}
+  .menu{
+    position:absolute;top:calc(100% + 4px);left:0;z-index:5;
+    min-width:190px;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:4px;box-shadow:0 6px 18px rgba(0,0,0,.15);
+    display:flex;flex-direction:column;gap:2px;
+  }
+  .menu[hidden]{display:none}
+  .menu button{
+    border:0;background:none;color:var(--ink);
+    font:inherit;font-size:13px;text-align:left;
+    border-radius:6px;padding:6px 10px;cursor:pointer;white-space:nowrap;
+  }
+  .menu button:hover{background:var(--panel2)}
   .gridwrap{
     background:var(--panel);
     border:1px solid var(--line);
@@ -165,6 +180,8 @@
     user-select:none;
   }
   td.cell.wet{box-shadow:inset 0 0 0 2px #4a90c8}
+  td.cell.rectprev{box-shadow:inset 0 0 0 2px var(--accent2)}
+  td.cell.rectprev.wet{box-shadow:inset 0 0 0 2px var(--accent2), inset 0 0 0 4px #4a90c8}
   /* touches target the td, not a child that renderCell may remove mid-drag */
   td.cell > *{pointer-events:none}
   td.cell .dot{
@@ -246,15 +263,24 @@
 
   <div class="center">
     <div class="toolrow">
-      <button class="btn" id="eraser" title="Eraser mode — sets a cell to empty so no code is generated for it (right-click does the same)">🧽 Eraser</button>
+      <span class="menuwrap">
+        <button class="btn" id="layoutBtn" title="Replaces the plan with a ready-made farm layout: lumber walls, plots, and a grass field on the right" aria-haspopup="menu" aria-expanded="false">⭐ Recommended layout ▾</button>
+        <div class="menu" id="layoutMenu" role="menu" hidden>
+          <button role="menuitem" data-layout="starter">🌱 Starter layout</button>
+          <button role="menuitem" data-layout="spring">🌸 Spring layout</button>
+          <button role="menuitem" data-layout="summer">☀️ Summer layout</button>
+          <button role="menuitem" data-layout="autumn">🍂 Autumn layout</button>
+        </div>
+      </span>
+      <button class="btn" id="rectTool" title="Rectangle mode — drag a box over the grid; the cells only change when you release">▭ Rectangle</button>
       <button class="btn" id="fillAll">🪣 Fill all with selection</button>
       <button class="btn" id="fillEmpty">🫗 Fill empty cells with selection</button>
+      <button class="btn" id="eraser" title="Eraser mode — sets a cell to empty so no code is generated for it (right-click does the same)">🧽 Eraser</button>
       <button class="btn" id="eraseSel" title="Empties every cell that currently holds the selected tile (for a crop: the selected stage only)">🧹 Erase selection everywhere</button>
-      <button class="btn" id="loadReco" title="Replaces the plan with a ready-made farm layout: lumber walls, hoed and watered plots, and a grass field on the right">⭐ Load recommended</button>
       <button class="btn danger" id="clearAll">Clear all</button>
       <button class="btn touchonly" id="dragPaint" title="While this is on, dragging a finger over the grid paints every cell it crosses — turn it off to scroll the grid again">✋ Drag to paint</button>
-      <span class="sub mouseonly" style="font-size:12.5px;color:var(--muted)">Click/drag to paint · right-click to empty a cell</span>
-      <span class="sub touchonly" style="font-size:12.5px;color:var(--muted)">Tap a cell to paint · turn on “Drag to paint” to paint by swiping</span>
+      <span class="sub mouseonly" style="font-size:12.5px;color:var(--muted)">Click/drag to paint · right-click to empty a cell · Rectangle: drag a box, cells change on release</span>
+      <span class="sub touchonly" style="font-size:12.5px;color:var(--muted)">Tap a cell to paint · turn on “Drag to paint” to paint by swiping · Rectangle: drag a box, cells change when you lift your finger</span>
     </div>
 
     <div class="gridwrap">
@@ -596,16 +622,11 @@
     document.getElementById('gridscroll').appendChild(tbl);
   }
 
-  function renderCell(c,r){
-    const td = tds[idx(c,r)];
-    const id = cells[idx(c,r)];
+  // draws a tile id into a td without touching state (also used for the rectangle preview)
+  function paintTd(td, id){
     td.innerHTML = '';
     td.classList.remove('wet');
-    if(!id){
-      td.style.background = '';
-      td.removeAttribute('title');
-      return;
-    }
+    if(!id){ td.style.background = ''; return; }
     const t = TILES[id];
     td.style.background = t.bg;
     if(t.wet) td.classList.add('wet');
@@ -618,7 +639,14 @@
       d.style.background = t.dot;
       td.appendChild(d);
     }
-    td.title = '('+c+','+r+') '+t.label;
+  }
+  function renderCell(c,r){
+    const td = tds[idx(c,r)];
+    const id = cells[idx(c,r)];
+    paintTd(td, id);
+    td.classList.remove('rectprev');
+    if(id) td.title = '('+c+','+r+') '+TILES[id].label;
+    else td.removeAttribute('title');
   }
   function renderAll(){
     for(let r=1;r<=ROWS;r++) for(let c=1;c<=COLS;c++) renderCell(c,r);
@@ -660,6 +688,7 @@
     ev.preventDefault();
     const c = +td.dataset.c, r = +td.dataset.r;
     if(ev.button === 2){ eraseCell(c,r); refreshOutSoon(); saveState(); return; }
+    if(rectMode){ rectBegin(c,r); return; }
     painting = true;
     applyAt(c,r);
   });
@@ -669,11 +698,83 @@
     const c = +td.dataset.c, r = +td.dataset.r;
     updateStatus(c,r);
     if(painting) applyAt(c,r);
+    else if(rectStart) rectMove(c,r);
   });
   gridscroll.addEventListener('contextmenu', ev => ev.preventDefault());
   window.addEventListener('mouseup', function(){
     if(painting){ painting = false; saveState(); }
+    if(rectStart) rectCommit();
   });
+
+  // ---- rectangle tool ----
+  // dragging only shows a preview; the cells change on release
+  let rectMode = false;
+  let rectStart = null, rectEnd = null;
+  let rectPrev = [];        // indices currently drawn as preview
+  const rectBtn = document.getElementById('rectTool');
+  rectBtn.addEventListener('click', function(){
+    rectMode = !rectMode;
+    this.classList.toggle('on', rectMode);
+    updateDragClass();
+  });
+  function rectBounds(){
+    return {
+      c0: Math.min(rectStart.c, rectEnd.c), c1: Math.max(rectStart.c, rectEnd.c),
+      r0: Math.min(rectStart.r, rectEnd.r), r1: Math.max(rectStart.r, rectEnd.r),
+    };
+  }
+  // id a cell gets inside the rectangle; undefined = unchanged
+  // 2x2 objects tile from the upper-left corner, blocks that do not fit are skipped
+  function rectId(c,r,b){
+    if(erasing) return null;
+    if(selectedBig){
+      const dc = c - b.c0, dr = r - b.r0;
+      if(b.c0 + (dc & ~1) + 1 > b.c1 || b.r0 + (dr & ~1) + 1 > b.r1) return undefined;
+      return BIG[selectedBig].corners[(dc & 1) + (dr & 1)*2];
+    }
+    return selected === null ? undefined : selected;
+  }
+  function rectBegin(c,r){
+    rectStart = {c:c, r:r}; rectEnd = {c:c, r:r};
+    rectRender();
+  }
+  function rectMove(c,r){
+    if(!rectStart || (rectEnd.c === c && rectEnd.r === r)) return;
+    rectEnd = {c:c, r:r};
+    rectRender();
+  }
+  function rectRender(){
+    const b = rectBounds();
+    const keep = new Set();
+    for(let r=b.r0;r<=b.r1;r++){
+      for(let c=b.c0;c<=b.c1;c++){
+        const i = idx(c,r), id = rectId(c,r,b);
+        keep.add(i);
+        paintTd(tds[i], id === undefined ? cells[i] : id);
+        tds[i].classList.add('rectprev');
+      }
+    }
+    rectPrev.forEach(function(i){ if(!keep.has(i)) renderCell(i%COLS+1, Math.floor(i/COLS)+1); });
+    rectPrev = Array.from(keep);
+  }
+  function rectClear(){
+    rectPrev.forEach(i => renderCell(i%COLS+1, Math.floor(i/COLS)+1));
+    rectPrev = [];
+    rectStart = rectEnd = null;
+  }
+  function rectCommit(){
+    if(!rectStart) return;
+    const b = rectBounds();
+    for(let r=b.r0;r<=b.r1;r++){
+      for(let c=b.c0;c<=b.c1;c++){
+        if(erasing){ eraseCell(c,r); continue; }
+        const id = rectId(c,r,b);
+        if(id !== undefined) cells[idx(c,r)] = id;
+      }
+    }
+    rectClear();
+    refreshOut(); saveState();
+  }
 
   // ---- touch painting ----
   // A touch drag scrolls the grid by default; with drag-paint on it paints instead.
@@ -684,8 +785,12 @@
   dragBtn.addEventListener('click', function(){
     paintDrag = !paintDrag;
     this.classList.toggle('on', paintDrag);
-    gridscroll.classList.toggle('paintdrag', paintDrag);
+    updateDragClass();
   });
+  // the rectangle tool always drags, so it also stops the grid from scrolling
+  function updateDragClass(){
+    gridscroll.classList.toggle('paintdrag', paintDrag || rectMode);
+  }
   function cellAtPoint(x,y){
     const el = document.elementFromPoint(x,y);
     return el ? el.closest('td.cell') : null;
@@ -701,19 +806,27 @@
     applyAt(c,r);
   }
   gridscroll.addEventListener('touchstart', function(ev){
-    if(!paintDrag || ev.touches.length > 1) return;
-    if(!cellAtPoint(ev.touches[0].clientX, ev.touches[0].clientY)) return;
+    if(!(paintDrag || rectMode) || ev.touches.length > 1) return;
+    const td = cellAtPoint(ev.touches[0].clientX, ev.touches[0].clientY);
+    if(!td) return;
     ev.preventDefault();   // also stops the emulated mouse events
+    if(rectMode){ rectBegin(+td.dataset.c, +td.dataset.r); return; }
     touchPainting = true;
     lastTouched = '';
     paintTouch(ev.touches[0]);
   }, {passive:false});
   gridscroll.addEventListener('touchmove', function(ev){
-    if(!touchPainting) return;
+    if(!touchPainting && !rectStart) return;
     ev.preventDefault();
+    if(rectStart){
+      const td = cellAtPoint(ev.touches[0].clientX, ev.touches[0].clientY);
+      if(td) rectMove(+td.dataset.c, +td.dataset.r);
+      return;
+    }
     paintTouch(ev.touches[0]);
   }, {passive:false});
   function endTouch(){
+    if(rectStart){ rectCommit(); return; }
     if(!touchPainting) return;
     touchPainting = false;
     lastTouched = '';
@@ -804,42 +917,158 @@
     msg.textContent = parts.join(', ');
   });
 
-  // ---- recommended layout ----
-  // one char per cell, row by row
-  const RECO_CHARS = {'.':'0000', 'h':'0002', 'L':'0860', 'g':'9551'};
-  const RECO_ROWS = [
-    ".........LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
-    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
-    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
-    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
-    ".........LggggggggggggggggggggggggggggggggL",
-    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
-    ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
-    ".hhh.hhh.LLLLLLLLLLLLLLLLLLLLLLLLLggggggggL",
-    ".................................LggggggggL",
-    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
-    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
-    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
-    ".................................LggggggggL",
-    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
-    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
-    ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
-    ".................................LggggggggL",
-    "LLLLLLLLLLLLLLLL.hhh.hhh.hhh.hhh.LggggggggL",
-    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
-    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
-    "L..............L.................LggggggggL",
-    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
-    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
-    "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
-    "LLLLLLLLLLLLLLLL.................LLLLLLLLLL",
-  ];
-  document.getElementById('loadReco').addEventListener('click', function(){
-    if(cells.some(Boolean) && !confirm('Replace the whole plan with the recommended layout?')) return;
+  // ---- recommended layouts ----
+  // one char per cell, row by row (seasonal rows come from layout.txt)
+  const LAYOUT_CHARS = {
+    '.':'0000', 'h':'0002', 'L':'0860', 'b':'085C', 'g':'9551',
+    // fully grown, watered
+    'T':'9502', 'P':'9506', 'C':'950A', 'S':'950E', 'B':'9512',
+    't':'9516', 'c':'951A', 'o':'951E', 'p':'9522', 'n':'9526',
+    'e':'952A', 'r':'952E', 's':'9532', 'i':'9536', 'G':'953A',
+    'm':'953E', 'k':'9542', 'u':'9546', 'R':'954A', 'y':'954E',
+  };
+  const LAYOUTS = {
+    starter: {name:'Starter layout', rows:[
+      ".........LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+      ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+      ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+      ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+      ".........LggggggggggggggggggggggggggggggggL",
+      ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+      ".hhh.hhh.LggggggggggggggggggggggggggggggggL",
+      ".hhh.hhh.LLLLLLLLLLLLLLLLLLLLLLLLLggggggggL",
+      ".................................LggggggggL",
+      ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+      ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+      ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+      ".................................LggggggggL",
+      ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+      ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+      ".hhh.hhh.hhh.hhh.hhh.hhh.hhh.hhh.LggggggggL",
+      ".................................LggggggggL",
+      "LLLLLLLLLLLLLLLL.hhh.hhh.hhh.hhh.LggggggggL",
+      "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+      "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+      "L..............L.................LggggggggL",
+      "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+      "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+      "L..............L.hhh.hhh.hhh.hhh.LggggggggL",
+      "LLLLLLLLLLLLLLLL.................LLLLLLLLLL",
+    ]},
+    spring: {name:'Spring layout', rows:[
+      ".........LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+      ".TTT.TTT.LggggggggggggggggggggggggggggggggL",
+      ".TTT.TTT.LggggggggggggggggggggggggggggggggL",
+      ".TTT.TTT.LggggggggggggggggggggggggggggggggL",
+      ".........LggggggggggggggggggggggggggggggggL",
+      ".TTT.TTT.LggggggggggggggggggggggggggggggggL",
+      ".TTT.TTT.LggggggggggggggggggggggggggggggggL",
+      ".TTT.TTT.LLLLLLLLLLLLLLLLLLLLLLLLLggggggggL",
+      ".................................LggggggggL",
+      ".PPP.PPP.CCC.CCC.SSS.SSS.BBB.BBB.LggggggggL",
+      ".PPP.PPP.CbC.CbC.SbS.SbS.BBB.BBB.LggggggggL",
+      ".PPP.PPP.CCC.CCC.SSS.SSS.BBB.BBB.LggggggggL",
+      ".................................LggggggggL",
+      ".PPP.PPP.CCC.CCC.SSS.SSS.BBB.BBB.LggggggggL",
+      ".PPP.PPP.CbC.CbC.SbS.SbS.BBB.BBB.LggggggggL",
+      ".PPP.PPP.CCC.CCC.SSS.SSS.BBB.BBB.LggggggggL",
+      ".................................LggggggggL",
+      "LLLLLLLLLLLLLLLL.mmm.mmm.yyy.yyy.LggggggggL",
+      "L..............L.mmm.mmm.yyy.yyy.LggggggggL",
+      "L..............L.mmm.mmm.yyy.yyy.LggggggggL",
+      "L..............L.................LggggggggL",
+      "L..............L.mmm.mmm.yyy.yyy.LggggggggL",
+      "L..............L.mmm.mmm.yyy.yyy.LggggggggL",
+      "L..............L.mmm.mmm.yyy.yyy.LggggggggL",
+      "LLLLLLLLLLLLLLLL.................LLLLLLLLLL",
+    ]},
+    summer: {name:'Summer layout', rows:[
+      ".........LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+      ".ooo.ooo.LggggggggggggggggggggggggggggggggL",
+      ".ooo.ooo.LggggggggggggggggggggggggggggggggL",
+      ".ooo.ooo.LggggggggggggggggggggggggggggggggL",
+      ".........LggggggggggggggggggggggggggggggggL",
+      ".ooo.ooo.LggggggggggggggggggggggggggggggggL",
+      ".ooo.ooo.LggggggggggggggggggggggggggggggggL",
+      ".ooo.ooo.LLLLLLLLLLLLLLLLLLLLLLLLLggggggggL",
+      ".................................LggggggggL",
+      ".ccc.ccc.ttt.ttt.nnn.nnn.ppp.ppp.LggggggggL",
+      ".cbc.cbc.tbt.tbt.nbn.nbn.ppp.ppp.LggggggggL",
+      ".ccc.ccc.ttt.ttt.nnn.nnn.ppp.ppp.LggggggggL",
+      ".................................LggggggggL",
+      ".ccc.ccc.ttt.ttt.nnn.nnn.ppp.ppp.LggggggggL",
+      ".cbc.cbc.tbt.tbt.nbn.nbn.ppp.ppp.LggggggggL",
+      ".ccc.ccc.ttt.ttt.nnn.nnn.ppp.ppp.LggggggggL",
+      ".................................LggggggggL",
+      "LLLLLLLLLLLLLLLL.kkk.kkk.........LggggggggL",
+      "L..............L.kkk.kkk.........LggggggggL",
+      "L..............L.kkk.kkk.........LggggggggL",
+      "L..............L.................LggggggggL",
+      "L..............L.kkk.kkk.........LggggggggL",
+      "L..............L.kkk.kkk.........LggggggggL",
+      "L..............L.kkk.kkk.........LggggggggL",
+      "LLLLLLLLLLLLLLLL.................LLLLLLLLLL",
+    ]},
+    autumn: {name:'Autumn layout', rows:[
+      ".........LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
+      ".rrr.rrr.LggggggggggggggggggggggggggggggggL",
+      ".rrr.rrr.LggggggggggggggggggggggggggggggggL",
+      ".rrr.rrr.LggggggggggggggggggggggggggggggggL",
+      ".........LggggggggggggggggggggggggggggggggL",
+      ".rrr.rrr.LggggggggggggggggggggggggggggggggL",
+      ".rrr.rrr.LggggggggggggggggggggggggggggggggL",
+      ".rrr.rrr.LLLLLLLLLLLLLLLLLLLLLLLLLggggggggL",
+      ".................................LggggggggL",
+      ".sss.sss.eee.eee.GGG.GGG.iii.iii.LggggggggL",
+      ".sbs.sbs.ebe.ebe.GbG.GbG.iii.iii.LggggggggL",
+      ".sss.sss.eee.eee.GGG.GGG.iii.iii.LggggggggL",
+      ".................................LggggggggL",
+      ".sss.sss.eee.eee.GGG.GGG.iii.iii.LggggggggL",
+      ".sbs.sbs.ebe.ebe.GbG.GbG.iii.iii.LggggggggL",
+      ".sss.sss.eee.eee.GGG.GGG.iii.iii.LggggggggL",
+      ".................................LggggggggL",
+      "LLLLLLLLLLLLLLLL.uuu.uuu.RRR.RRR.LggggggggL",
+      "L..............L.uuu.uuu.RRR.RRR.LggggggggL",
+      "L..............L.uuu.uuu.RRR.RRR.LggggggggL",
+      "L..............L.................LggggggggL",
+      "L..............L.uuu.uuu.RRR.RRR.LggggggggL",
+      "L..............L.uuu.uuu.RRR.RRR.LggggggggL",
+      "L..............L.uuu.uuu.RRR.RRR.LggggggggL",
+      "LLLLLLLLLLLLLLLL.................LLLLLLLLLL",
+    ]},
+  };
+  function loadLayout(key){
+    const lay = LAYOUTS[key];
+    if(!lay) return;
+    if(cells.some(Boolean) && !confirm('Replace the whole plan with the '+lay.name+'?')) return;
     for(let r=0;r<ROWS;r++){
-      for(let c=0;c<COLS;c++) cells[r*COLS+c] = VALUE2ID[RECO_CHARS[RECO_ROWS[r][c]]] || null;
+      for(let c=0;c<COLS;c++) cells[r*COLS+c] = VALUE2ID[LAYOUT_CHARS[lay.rows[r][c]]] || null;
     }
     renderAll(); saveState();
+  }
+  const layoutBtn = document.getElementById('layoutBtn');
+  const layoutMenu = document.getElementById('layoutMenu');
+  function showLayoutMenu(open){
+    layoutMenu.hidden = !open;
+    layoutBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  layoutBtn.addEventListener('click', function(ev){
+    ev.stopPropagation();
+    showLayoutMenu(layoutMenu.hidden);
+  });
+  layoutMenu.addEventListener('click', function(ev){
+    const b = ev.target.closest('button[data-layout]');
+    if(!b) return;
+    showLayoutMenu(false);
+    loadLayout(b.dataset.layout);
+  });
+  document.addEventListener('click', function(ev){
+    if(!layoutMenu.hidden && !ev.target.closest('.menuwrap')) showLayoutMenu(false);
+  });
+  document.addEventListener('keydown', function(ev){
+    if(ev.key !== 'Escape') return;
+    if(!layoutMenu.hidden) showLayoutMenu(false);
+    if(rectStart) rectClear();
   });
 
   document.getElementById('eraser').addEventListener('click', function(){
