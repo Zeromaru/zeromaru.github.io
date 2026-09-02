@@ -90,6 +90,7 @@
     color:var(--muted);margin-bottom:8px;
   }
   .swatches{display:flex;flex-wrap:wrap;gap:5px}
+  .season{font-size:11.5px;font-weight:600;color:var(--muted);margin:8px 0 4px}
   .sw{
     display:flex;align-items:center;gap:7px;
     border:1px solid var(--line);
@@ -164,6 +165,8 @@
     user-select:none;
   }
   td.cell.wet{box-shadow:inset 0 0 0 2px #4a90c8}
+  /* touches target the td, not a child that renderCell may remove mid-drag */
+  td.cell > *{pointer-events:none}
   td.cell .dot{
     display:inline-block;width:7px;height:7px;border-radius:50%;
     border:1px solid rgba(0,0,0,.35);
@@ -350,28 +353,29 @@
     TILES['g'+d[0]] = {x:d[0], g:'0000', label:d[1], bg:d[2], em:d[3], img:d[4]};
   });
 
+  // [value, label, emoji, bg, sprite, season]
   const cropDefs = [
-    ['01','Turnip','⚪','#dfe3d2','turnip'],
-    ['05','Potato','🥔','#d9c391','potato'],
-    ['09','Cucumber','🥒','#bcd9a0','cucumber'],
-    ['0D','Strawberry','🍓','#e8b7b7','strawberry'],
-    ['11','Cabbage','🥬','#bfd9ac','cabbage'],
-    ['15','Tomato','🍅','#e8a898','tomato'],
-    ['19','Corn','🌽','#ead990','corn'],
-    ['1D','Onion','🧅','#e0cba6','onion'],
-    ['21','Pumpkin','🎃','#e8b878','pumpkin'],
-    ['25','Pineapple','🍍','#e3d386','pinepple'],
-    ['29','Eggplant','🍆','#cbb3d6','eggplant'],
-    ['2D','Carrot','🥕','#e8bb8e','carrot'],
-    ['31','Sweet potato','🍠','#d9ab9a','sweet-potato'],
-    ['35','Spinach','🍃','#b3d6ad','spinach'],
-    ['39','Green pepper','🫑','#b0d69e','green-pepper'],
-    ['3D','Moon drop','🌼','#ecdf9a','moon-drop-flower'],
-    ['41','Pink cat','🌸','#ecc6d6','pink-cat-flower'],
-    ['45','Blue magic','🪻','#b8c6e8','blue-magic-flower'],
-    ['49','Red magic','🌹','#e0a0a0','red-magic-flower'],
-    ['4D','Toy flower','🌷','#e6c2ad','toy-flower'],
-    ['51','Grass','🌾','#c6d69a','grass'],
+    ['01','Turnip','⚪','#dfe3d2','turnip','sp'],
+    ['05','Potato','🥔','#d9c391','potato','sp'],
+    ['09','Cucumber','🥒','#bcd9a0','cucumber','sp'],
+    ['0D','Strawberry','🍓','#e8b7b7','strawberry','sp'],
+    ['11','Cabbage','🥬','#bfd9ac','cabbage','sp'],
+    ['15','Tomato','🍅','#e8a898','tomato','su'],
+    ['19','Corn','🌽','#ead990','corn','su'],
+    ['1D','Onion','🧅','#e0cba6','onion','su'],
+    ['21','Pumpkin','🎃','#e8b878','pumpkin','su'],
+    ['25','Pineapple','🍍','#e3d386','pinepple','su'],
+    ['29','Eggplant','🍆','#cbb3d6','eggplant','au'],
+    ['2D','Carrot','🥕','#e8bb8e','carrot','au'],
+    ['31','Sweet potato','🍠','#d9ab9a','sweet-potato','au'],
+    ['35','Spinach','🍃','#b3d6ad','spinach','au'],
+    ['39','Green pepper','🫑','#b0d69e','green-pepper','au'],
+    ['3D','Moon drop','🌼','#ecdf9a','moon-drop-flower','sp'],
+    ['41','Pink cat','🌸','#ecc6d6','pink-cat-flower','su'],
+    ['45','Blue magic','🪻','#b8c6e8','blue-magic-flower','au'],
+    ['49','Red magic','🌹','#e0a0a0','red-magic-flower','au'],
+    ['4D','Toy flower','🌷','#e6c2ad','toy-flower','sp'],
+    ['51','Grass','🌾','#c6d69a','grass','all'],
   ];
   const WATERED = 1;                // 01XX / 95XX already hold the hoed bit; +1 makes it "Hoed & watered" (0001 -> 0002)
   const WET_SOIL_BG = '#63492e';
@@ -506,9 +510,14 @@
       + '<button data-stage="f" class="on">🌾 Grown</button>'
       + '<button data-stage="w" title="Fully grown on watered soil (grass has no watered stage)">🌾💧 Grown wet</button>';
     gCrop.appendChild(stageEl);
-    const sw2 = document.createElement('div'); sw2.className = 'swatches';
-    cropDefs.forEach(d => sw2.appendChild(swatch('CROP'+d[0], d[1], d[3], d[2], null, d[4])));
-    gCrop.appendChild(sw2);
+    [['sp','🌸 Spring'],['su','☀️ Summer'],['au','🍂 Autumn'],['all','🌾 All seasons']].forEach(function(se){
+      const h = document.createElement('div');
+      h.className = 'season'; h.textContent = se[1];
+      gCrop.appendChild(h);
+      const sw = document.createElement('div'); sw.className = 'swatches';
+      cropDefs.filter(d => d[5] === se[0]).forEach(d => sw.appendChild(swatch('CROP'+d[0], d[1], d[3], d[2], null, d[4])));
+      gCrop.appendChild(sw);
+    });
 
     const gObs = document.createElement('div');
     gObs.className = 'group';
