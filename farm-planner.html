@@ -110,10 +110,11 @@
     border:1px solid rgba(0,0,0,.18);
   }
   .stage{
-    display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:9px;
+    display:grid;grid-template-columns:1fr 1fr;
+    border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:9px;
   }
   .stage button{
-    flex:1;border:0;padding:6px 4px;font:inherit;font-size:12.5px;
+    border:0;padding:6px 2px;font:inherit;font-size:12px;white-space:nowrap;
     background:var(--panel2);color:var(--muted);cursor:pointer;
   }
   .stage button.on{background:var(--accent);color:var(--accent-ink);font-weight:600}
@@ -162,6 +163,7 @@
     padding:0;
     user-select:none;
   }
+  td.cell.wet{box-shadow:inset 0 0 0 2px #4a90c8}
   td.cell .dot{
     display:inline-block;width:7px;height:7px;border-radius:50%;
     border:1px solid rgba(0,0,0,.35);
@@ -371,10 +373,22 @@
     ['4D','Toy flower','🌷','#e6c2ad','toy-flower'],
     ['51','Grass','🌾','#c6d69a','grass'],
   ];
+  const WATERED = 1;                // 01XX / 95XX already hold the hoed bit; +1 makes it "Hoed & watered" (0001 -> 0002)
+  const WET_SOIL_BG = '#63492e';
+  const GRASS = '51';               // grass seeds can be watered, grown grass cannot
+  const wetValue = v => (parseInt(v,16) + WATERED).toString(16).toUpperCase().padStart(4,'0');
   cropDefs.forEach(function(d){
     TILES['c'+d[0]+'s'] = {x:'01'+d[0], g:'0000', label:d[1]+' (seeds)', bg:SOIL_BG, em:'', dot:d[3]};
+    TILES['c'+d[0]+'sw'] = {x:wetValue('01'+d[0]), g:'0000', label:d[1]+' (seeds, watered)', bg:WET_SOIL_BG, em:'', dot:d[3], wet:true};
     TILES['c'+d[0]+'f'] = {x:'95'+d[0], g:'0000', label:d[1]+' (fully grown)', bg:d[3], em:d[2], img:d[4]};
+    if(d[0] === GRASS) return;
+    TILES['c'+d[0]+'w'] = {x:wetValue('95'+d[0]), g:'0000', label:d[1]+' (fully grown, watered)', bg:d[3], em:d[2], img:d[4], wet:true};
   });
+  // grass falls back to plain fully grown when the watered stage is chosen
+  function cropId(crop, st){
+    if(st === 'w' && crop === GRASS) st = 'f';
+    return 'c'+crop+st;
+  }
 
   const smallObsDefs = [
     ['0854','Weeds','🌿','#a8b790','weed'],
@@ -413,7 +427,7 @@
   let selected = 'g0000';      // current paint id
   let selectedBig = null;
   let selectedCrop = null;     // crop suffix when a crop swatch is chosen
-  let stage = 'f';             // 's' seed | 'f' full
+  let stage = 'f';             // 's' seed | 'sw' seed + watered | 'f' full | 'w' full + watered
   let erasing = false;
   let painting = false;
 
@@ -487,7 +501,10 @@
     gCrop.innerHTML = '<h3>Crops</h3>';
     const stageEl = document.createElement('div');
     stageEl.className = 'stage';
-    stageEl.innerHTML = '<button data-stage="s">🌱 Seeds</button><button data-stage="f" class="on">🌾 Fully grown</button>';
+    stageEl.innerHTML = '<button data-stage="s">🌱 Seeds</button>'
+      + '<button data-stage="sw" title="Seeds on watered soil">🌱💧 Seeds wet</button>'
+      + '<button data-stage="f" class="on">🌾 Grown</button>'
+      + '<button data-stage="w" title="Fully grown on watered soil (grass has no watered stage)">🌾💧 Grown wet</button>';
     gCrop.appendChild(stageEl);
     const sw2 = document.createElement('div'); sw2.className = 'swatches';
     cropDefs.forEach(d => sw2.appendChild(swatch('CROP'+d[0], d[1], d[3], d[2], null, d[4])));
@@ -516,7 +533,7 @@
         stage = b.dataset.stage;
         stageEl.querySelectorAll('button').forEach(x => x.classList.toggle('on', x.dataset.stage===stage));
         if(selectedCrop && selected && selected[0]==='c'){
-          selected = 'c'+selectedCrop+stage;
+          selected = cropId(selectedCrop, stage);
         }
         return;
       }
@@ -528,7 +545,7 @@
         selected = null;
       }else if(pick.startsWith('CROP')){
         selectedCrop = pick.slice(4);
-        selected = 'c'+selectedCrop+stage;
+        selected = cropId(selectedCrop, stage);
         selectedBig = null;
       }else{
         selected = pick;
@@ -574,6 +591,7 @@
     const td = tds[idx(c,r)];
     const id = cells[idx(c,r)];
     td.innerHTML = '';
+    td.classList.remove('wet');
     if(!id){
       td.style.background = '';
       td.removeAttribute('title');
@@ -581,6 +599,7 @@
     }
     const t = TILES[id];
     td.style.background = t.bg;
+    if(t.wet) td.classList.add('wet');
     const im = spriteImg(t.img);
     if(im) td.appendChild(im);
     else if(t.em) td.textContent = t.em;
